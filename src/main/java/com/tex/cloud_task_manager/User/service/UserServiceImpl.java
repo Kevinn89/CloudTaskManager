@@ -17,7 +17,6 @@ public class UserServiceImpl implements UserService {
 
     private final UserEntityRepository userEntityRepository;
 
-
     @Override
     public UserEntity createUser(String name, String email, String password) {
         UserEntity user = new UserEntity();
