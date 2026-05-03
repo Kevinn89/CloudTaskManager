@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -35,6 +36,17 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.getWriter().write("""
+                            {
+                              "message": "Unauthorized"
+                            }
+                            """);
+                    })
+            )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(
