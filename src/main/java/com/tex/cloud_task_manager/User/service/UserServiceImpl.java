@@ -19,13 +19,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserEntity createUser(String name, String email, String password) {
-        UserEntity user = new UserEntity();
-        user.setEmail(email);
-        user.setName(name);
-        user.setCreatedAt(Instant.now().toString());
-        user.setUpdatedAt(null);
-        user.setPassword(password); //need to add password encoding
-
+        UserEntity user = UserEntity.builder()
+                .name(name)
+                .email(email)
+                .password(password)
+                .createdAt(Instant.now().toString())
+                .updatedAt(null)
+                .build();
         return userEntityRepository.save(user);
     }
 
@@ -47,15 +47,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserEntity updateUser(Long id, String name, String email, String password) {
         
-        UserEntity user = new UserEntity();
-        user.setId(id);
-        user.setEmail(email);
-        user.setName(name);
-        user.setPassword(password);  // need to hash
+        UserEntity user = UserEntity.builder()
+                .id(id)
+                .email(email)
+                .name(name)
+                .password(password)  // need to hash
+                .build();
+                
         return userEntityRepository.save(user);
     }
-
-
 
     @Override
     public List<UserEntity> getAllUsers() {

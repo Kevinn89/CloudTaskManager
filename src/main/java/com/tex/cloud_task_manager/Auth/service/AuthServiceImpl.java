@@ -1,6 +1,7 @@
 package com.tex.cloud_task_manager.Auth.service;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,21 +31,32 @@ public class AuthServiceImpl implements AuthService {
 
             return new AuthResponse("User already exists for this email", null);
         }
-        userService.createUser(name, email, passwordEncoder.encode(password));
+
+          String encodedPassword = passwordEncoder.encode(password);
+        userService.createUser(name, email, encodedPassword);
         return new AuthResponse("User registered successfully ", null);
     }
 
     @Override
     public AuthResponse loginUser(String email, String password) {
   
-          authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(email, password)
-    );
-        var userDetails = customUserDetailsService.loadUserByUsername(email);
+        try {
 
-        String token = jwtService.generateToken(userDetails);
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
 
-        return new AuthResponse("User logged in successfully", token);
+            var userDetails = customUserDetailsService.loadUserByUsername(email);
+
+            String token = jwtService.generateToken(userDetails);
+
+            return new AuthResponse("User logged in successfully", token);
+
+        } 
+        catch(BadCredentialsException e) {
+            return new AuthResponse("Invalid credentials", null);
+        }
+
     }
 
 }
