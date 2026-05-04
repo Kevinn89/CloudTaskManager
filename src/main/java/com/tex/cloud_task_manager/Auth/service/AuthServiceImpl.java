@@ -48,6 +48,7 @@ public class AuthServiceImpl implements AuthService {
 
             var userDetails = customUserDetailsService.loadUserByUsername(email);
 
+
             String token = jwtService.generateToken(userDetails);
 
             return new AuthResponse("User logged in successfully", token);

@@ -1,6 +1,5 @@
 package com.tex.cloud_task_manager.Security;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 
@@ -9,19 +8,24 @@ import javax.crypto.SecretKey;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import com.tex.cloud_task_manager.Config.JwtProperties;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
-
-    private static final String SECRET =
-            "8f4f4e0c7b0d0a7c2c42f69c9b0b0a6e9b8d3f6a4c7e1d2f9a0b1c2d3e4f5a6b";
-
-    private final SecretKey signingKey = Keys.hmacShaKeyFor(
-            SECRET.getBytes(StandardCharsets.UTF_8)
-    );
+     
+    private final JwtProperties jwtProps;
+    
+      private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(jwtProps.secret());
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
 
     public String generateToken(UserDetails userDetails) {
         Instant now = Instant.now();
@@ -30,7 +34,7 @@ public class JwtService {
                 .subject(userDetails.getUsername())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(60 * 15)))
-                .signWith(signingKey)
+                .signWith(getSigningKey())
                 .compact();
     }
 
@@ -55,9 +59,11 @@ public class JwtService {
         return isTokenExpired;
     }
 
+
+
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(signingKey)
+                .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

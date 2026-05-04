@@ -1,5 +1,7 @@
 package com.tex.cloud_task_manager.User;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,5 +36,7 @@ public class UserEntity {
         private String createdAt;
         @Column(nullable = true)
         private String updatedAt;
+        @Column(name = "login_dt", nullable = true)
+        private LocalDateTime loginDt;
 
 }

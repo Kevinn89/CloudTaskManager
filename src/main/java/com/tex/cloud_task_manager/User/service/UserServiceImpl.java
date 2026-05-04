@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -60,6 +61,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserEntity> getAllUsers() {
        return userEntityRepository.findAll();
+    }
+    
+    @Transactional
+    @Override
+    public void updateLoginDt(Long id) {
+        userEntityRepository.updateLoginDtById(id);
     }
 
 

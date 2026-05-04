@@ -13,8 +13,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-
     private final UserService userService;
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
          
@@ -23,7 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         if(!user.isPresent()) {
               throw new UsernameNotFoundException("User not found");
           }
-
+        userService.updateLoginDt(user.get().getId());
             return org.springframework.security.core.userdetails.User
                 .withUsername(user.get().getEmail())
                 .password(user.get().getPassword())
