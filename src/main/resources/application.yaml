@@ -1,3 +1,36 @@
+
+server:
+  port: 8081
+
 spring:
   application:
     name: cloud-task-manager
+
+  profiles:
+    active: local
+
+  jwt:
+    secret: ${JWT_SECRET}
+
+  datasource:
+    url: jdbc:h2:mem:cloud_task_manager_local
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  sql:
+    init:
+      mode: never
