@@ -1,4 +1,4 @@
-package com.tex.cloud_task_manager.User;
+package com.tex.cloud_task_manager.RefreshToken;
 
 import java.time.LocalDateTime;
 
@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,24 +18,33 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
+@Table(name = "refresh_tokens")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserEntity {
+public class RefreshTokenEntity {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private  Long id;
-        @Column(unique = true)
-        private String email;
         @Column(nullable = false)
-        private String password;
+        private long userId;
+        @Column(name = "token_hash", nullable = false)
+        private String tokenHash;
         @Column(nullable = false)
-        private String name;
+        private boolean revoked;
+        @Column(nullable = false)
+        private LocalDateTime expiresAt;
         @Column(nullable = false)
         private LocalDateTime createdAt;
         @Column(nullable = true)
-        private LocalDateTime updatedAt;
+        private LocalDateTime lastUsedAt;
+        @Column(nullable = true)
+        private LocalDateTime revokedAt;
+        @Transient
+        private String rawToken;
+        
+
+
 
 }

@@ -1,6 +1,7 @@
 package com.tex.cloud_task_manager.Security;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -19,8 +20,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class JwtService {
+
      
     private final JwtProperties jwtProps;
+    
     
       private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtProps.secret());
@@ -28,12 +31,18 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
-        Instant now = Instant.now();
+
+        return buildToken(userDetails.getUsername());
+    }
+
+    private String buildToken(String userName){
+
+           Instant now = Instant.now();
 
         return Jwts.builder()
-                .subject(userDetails.getUsername())
+                .subject(userName)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(60 * 15)))
+                .expiration(Date.from(now.plus(jwtProps.accessTokenExpirationMinutes(), ChronoUnit.MINUTES)))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -59,13 +68,22 @@ public class JwtService {
         return isTokenExpired;
     }
 
+     public String extractExpiration(String token) {
 
+        String expiration = extractAllClaims(token).getExpiration().toString();
+        return expiration;
+    } 
 
+    
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public String generateToken(String email) {
+        return buildToken(email);
     }
 }

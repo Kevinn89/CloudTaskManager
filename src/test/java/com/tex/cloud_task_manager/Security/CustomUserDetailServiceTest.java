@@ -1,13 +1,10 @@
-package com.tex.cloud_task_manager;
+package com.tex.cloud_task_manager.Security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.service.UserService;
 
@@ -34,8 +30,6 @@ public class CustomUserDetailServiceTest {
 
         private UserEntity userEntity;
 
-        private UserDetails userDetail;
-
         @BeforeEach
         void setUp() {
         userEntity = UserEntity.builder()
@@ -43,7 +37,7 @@ public class CustomUserDetailServiceTest {
                 .name("Kevin")
                 .email("test@example.com")
                 .password("password123")
-                .createdAt("2023-01-01")
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 
@@ -70,9 +64,7 @@ public class CustomUserDetailServiceTest {
                 () -> customService.loadUserByUsername("test@example.com")
 
             );
-            assertNull(userDetail);
             assertEquals("User not found", exception.getMessage());
-            verify(userService, never()).updateLoginDt(anyLong()); 
         }
 
 }

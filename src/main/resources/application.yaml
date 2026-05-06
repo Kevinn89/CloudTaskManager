@@ -1,6 +1,6 @@
 
 server:
-  port: 8081
+  port: 8080
 
 spring:
   application:
@@ -8,9 +8,6 @@ spring:
 
   profiles:
     active: local
-
-  jwt:
-    secret: ${JWT_SECRET}
 
   datasource:
     url: jdbc:h2:mem:cloud_task_manager_local
@@ -34,3 +31,10 @@ spring:
   sql:
     init:
       mode: never
+
+# Added to configure JWT properties only seems to work when on save hiearchal lvl as application
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:2}
+    refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:7}

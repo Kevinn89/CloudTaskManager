@@ -1,6 +1,7 @@
 package com.tex.cloud_task_manager.Security;
 
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -23,9 +24,8 @@ public class CustomUserDetailsService implements UserDetailsService {
         if(!user.isPresent()) {
               throw new UsernameNotFoundException("User not found");
           }
-        userService.updateLoginDt(user.get().getId());
-            return org.springframework.security.core.userdetails.User
-                .withUsername(user.get().getEmail())
+            return User.builder()
+                .username(user.get().getEmail())
                 .password(user.get().getPassword())
                 .roles("USER")
                 .build();
