@@ -74,17 +74,6 @@ configurations {
 	integrationTestAnnotationProcessor.extendsFrom testAnnotationProcessor
 }
 
-// tasks.register('integrationTest', Test) {
-// 	description = 'Runs integration tests.'
-// 	group = 'verification'
-
-// 	testClassesDirs = sourceSets.integrationTest.output.classesDirs
-// 	classpath = sourceSets.integrationTest.runtimeClasspath
-
-// 	shouldRunAfter tasks.named('test')
-// 	useJUnitPlatform()
-// }
-
 tasks.register('integrationTest', Test) {
     description = 'Runs integration tests.'
     group = 'verification'
@@ -94,7 +83,7 @@ tasks.register('integrationTest', Test) {
 
     shouldRunAfter tasks.named('test')
     useJUnitPlatform()
-	
+
 // Disable parallel execution for integration tests to avoid issues with shared resources
     maxParallelForks = 1
     systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'

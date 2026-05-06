@@ -8,14 +8,6 @@ spring:
 
   profiles:
     active: local
-  # secret works, but both tokens fail to inject values and keeps them at 0
-  # jwt:
-  #   secret: ${JWT_SECRET}
-  #   access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:30}
-  #   refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:7}
-    # For using env to set values
-    # access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES}
-    # refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS}
 
   datasource:
     url: jdbc:h2:mem:cloud_task_manager_local
@@ -44,7 +36,5 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET}
-    # access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES}
-    # refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS}
     access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:2}
     refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:7}

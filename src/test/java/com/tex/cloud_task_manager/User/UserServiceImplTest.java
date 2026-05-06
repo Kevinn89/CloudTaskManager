@@ -18,10 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tex.cloud_task_manager.User.service.UserServiceImpl;
 
-import lombok.RequiredArgsConstructor;
-
 @ExtendWith(MockitoExtension.class)
-@RequiredArgsConstructor
 class UserServiceImplTest {
 
     @Mock

@@ -30,8 +30,6 @@ public class CustomUserDetailServiceTest {
 
         private UserEntity userEntity;
 
-      //  private UserDetails userDetail;
-
         @BeforeEach
         void setUp() {
         userEntity = UserEntity.builder()
