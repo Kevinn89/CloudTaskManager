@@ -1,6 +1,6 @@
 package com.tex.cloud_task_manager.User.service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,10 +23,10 @@ public class UserServiceImpl implements UserService {
                 .name(name)
                 .email(email)
                 .password(password)
-                .createdAt(Instant.now().toString())
+                .createdAt(LocalDateTime.now())
                 .updatedAt(null)
                 .build();
-        return userEntityRepository.save(user);
+        return saveUserEntity(user);
     }
 
     @Override
@@ -45,16 +44,7 @@ public class UserServiceImpl implements UserService {
         return userEntityRepository.findByEmail(email);
     }
 
-    @Override
-    public UserEntity updateUser(Long id, String name, String email, String password) {
-        
-        UserEntity user = UserEntity.builder()
-                .id(id)
-                .email(email)
-                .name(name)
-                .password(password)  // need to hash
-                .build();
-                
+    private UserEntity saveUserEntity(UserEntity user) {
         return userEntityRepository.save(user);
     }
 
@@ -63,11 +53,4 @@ public class UserServiceImpl implements UserService {
        return userEntityRepository.findAll();
     }
     
-    @Transactional
-    @Override
-    public void updateLoginDt(Long id) {
-        userEntityRepository.updateLoginDtById(id);
-    }
-
-
 }

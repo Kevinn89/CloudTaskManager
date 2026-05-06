@@ -8,11 +8,9 @@ import com.tex.cloud_task_manager.User.UserEntity;
 public interface UserService {
 
     UserEntity createUser(String name, String email, String password);
-   Optional<UserEntity> getUserById(Long id);
-    UserEntity updateUser(Long id, String name, String email, String password);
-   Optional<UserEntity> findByEmail(String email);
+    Optional<UserEntity> getUserById(Long id);
+   // UserEntity updateUser(Long id, String name, String email, String password);
+    Optional<UserEntity> findByEmail(String email);
     void deleteUser(Long id);
     List<UserEntity> getAllUsers();
-    void updateLoginDt(Long id);
-
 }
