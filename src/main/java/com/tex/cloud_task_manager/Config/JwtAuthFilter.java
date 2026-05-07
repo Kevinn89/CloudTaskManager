@@ -30,7 +30,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
 
     boolean skip = path.startsWith("/api/auth/")
-            || path.startsWith("/h2-console");
+            || path.startsWith("/h2-console")
+            || path.startsWith("/api/auth/project");
 
     return skip;
     }
