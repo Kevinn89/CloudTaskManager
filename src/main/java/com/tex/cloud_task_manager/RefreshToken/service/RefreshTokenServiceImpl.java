@@ -9,13 +9,12 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenRepository;
-import com.tex.cloud_task_manager.User.service.UserService;
+import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -25,20 +24,18 @@ import lombok.RequiredArgsConstructor;
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final UserService userService;
+
+    private final UserEntityRepository userEntityRepository;
     
-@Transactional
+    @Transactional
     @Override
     public void revokeRefreshToken(String token) {
 
-        String tokenHash = generateHashfromToken(token);
-        int refreshTokenOptional = refreshTokenRepository.revokeActiveTokensByTokenHash(tokenHash, LocalDateTime.now());
-   
-        if(refreshTokenOptional == 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid refresh token"
-            );
+       String tokenHash = generateHashfromToken(token);
+
+      int rowsUpdated = refreshTokenRepository.revokeActiveTokensByTokenHash(tokenHash, LocalDateTime.now());
+        if (rowsUpdated == 0) {
+            throw new UnauthorizedException("Invalid refresh token");
         }
     }
 
@@ -47,43 +44,36 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         String tokenHash = generateHashfromToken(token);
 
-        Optional<RefreshTokenEntity> refreshTokenOptional = Optional.ofNullable(refreshTokenRepository.findByTokenHashAndRevoked(tokenHash, false));
+        var refreshTokenOptional = Optional.ofNullable(refreshTokenRepository.findByTokenHashAndRevoked(tokenHash, false)).orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
-        if(refreshTokenOptional.isPresent()) {
+        return saveRefreshTokenEntity(refreshTokenOptional);
 
-            refreshTokenOptional.get().setLastUsedAt(LocalDateTime.now());
-            
-            return saveRefreshTokenEntity(refreshTokenOptional.get());
-        }
-        throw new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED,
-                "Invalid refresh token"
-        );
     }
 
     @Override
     public RefreshTokenEntity generateRefreshToken(String email) {  
         
-    var userOptional = userService.findByEmail(email);
-    String rawToken = generateSecureRandomToken();
-    String tokenHash = generateHashfromToken(rawToken);
+        var userOptional = userEntityRepository.findByEmail(email).orElseThrow(() -> new UnauthorizedException("User not found for this email " + email));
+    
+        String rawToken = generateSecureRandomToken();
+        
+        String tokenHash = generateHashfromToken(rawToken);
 
-    RefreshTokenEntity refreshToken = RefreshTokenEntity.builder()
-            .userId(userOptional.get().getId())
-            .expiresAt(LocalDateTime.now().plusDays(7))
-            .createdAt(LocalDateTime.now())
-            .lastUsedAt(null)
-            .revokedAt(null)
-            .tokenHash(tokenHash)
-            .rawToken(rawToken)
-            .revoked(false)
-            .build();
-            
-    return saveRefreshTokenEntity(refreshToken);
+        RefreshTokenEntity refreshToken = RefreshTokenEntity.builder()
+                .userId(userOptional.getId())
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .createdAt(LocalDateTime.now())
+                .lastUsedAt(null)
+                .revokedAt(null)
+                .tokenHash(tokenHash)
+                .rawToken(rawToken)
+                .revoked(false)
+                .build();
+                
+        return saveRefreshTokenEntity(refreshToken);
 
     }
 
-    
     private String generateSecureRandomToken() {
     
            byte[] randomBytes = new byte[64];
@@ -114,7 +104,5 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private RefreshTokenEntity saveRefreshTokenEntity(RefreshTokenEntity refreshToken) {
         return refreshTokenRepository.save(refreshToken);
     }
-
-
 
 }

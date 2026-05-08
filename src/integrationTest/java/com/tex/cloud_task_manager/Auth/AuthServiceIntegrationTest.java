@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.tex.cloud_task_manager.AbstractIntegrationTest;
-import com.tex.cloud_task_manager.Auth.response_request.AuthApiReponse;
+import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
 import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
 import com.tex.cloud_task_manager.Auth.service.AuthService;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
@@ -147,7 +147,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
         );
 
         // Act
-        AuthResponse response = (AuthResponse) authService.loginUser(
+        AuthResponse response = authService.loginUser(
                 "kevin@test.com",
                 "WrongPassword123!"
         );
@@ -189,7 +189,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
                 "Password123!"
         );
 
-        AuthResponse loginResponse = (AuthResponse) authService.loginUser(
+        AuthResponse loginResponse = authService.loginUser(
                 "kevin@test.com",
                 "Password123!"
         );
@@ -197,7 +197,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
         String refreshToken = loginResponse.refreshToken();
 
         // Act
-        AuthResponse refreshResponse = (AuthResponse) authService.refresh(
+        AuthResponse refreshResponse = authService.refresh(
                 refreshToken,
                 "kevin@test.com"
         );
@@ -225,7 +225,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
                 "Password123!"
         );
 
-        AuthResponse loginResponse = (AuthResponse) authService.loginUser(
+        AuthResponse loginResponse = authService.loginUser(
                 "kevin@test.com",
                 "Password123!"
         );
@@ -233,12 +233,12 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
         String refreshToken = loginResponse.refreshToken();
 
         // Act
-        AuthApiReponse logoutResponse = authService.logout(refreshToken);
+        AuthResponse logoutResponse = authService.logout(refreshToken);
 
         // Assert response
         assertThat(logoutResponse).isInstanceOf(AuthResponse.class);
 
-        AuthResponse authResponse = (AuthResponse) logoutResponse;
+        AuthResponse authResponse = logoutResponse;
 
         assertThat(authResponse.message()).isEqualTo("User logged out successfully");
         assertThat(authResponse.token()).isNull();
