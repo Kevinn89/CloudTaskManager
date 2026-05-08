@@ -50,60 +50,6 @@ class UserServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void getUserByIdShouldReturnUserWhenUserExists() {
-        // Arrange
-        UserEntity savedUser = userService.createUser(
-                "Kevin",
-                "kevin@test.com",
-                "encoded-password"
-        );
-
-        // Act
-        Optional<UserEntity> result = userService.getUserById(savedUser.getId());
-
-        // Assert
-        assertThat(result).isPresent();
-        assertThat(result.get().getId()).isEqualTo(savedUser.getId());
-        assertThat(result.get().getEmail()).isEqualTo("kevin@test.com");
-    }
-
-    @Test
-    void getUserByIdShouldReturnEmptyWhenUserDoesNotExist() {
-        // Act
-        Optional<UserEntity> result = userService.getUserById(999L);
-
-        // Assert
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    void findByEmailShouldReturnUserWhenEmailExists() {
-        // Arrange
-        userService.createUser(
-                "Kevin",
-                "kevin@test.com",
-                "encoded-password"
-        );
-
-        // Act
-        Optional<UserEntity> result = userService.findByEmail("kevin@test.com");
-
-        // Assert
-        assertThat(result).isPresent();
-        assertThat(result.get().getName()).isEqualTo("Kevin");
-        assertThat(result.get().getEmail()).isEqualTo("kevin@test.com");
-    }
-
-    @Test
-    void findByEmailShouldReturnEmptyWhenEmailDoesNotExist() {
-        // Act
-        Optional<UserEntity> result = userService.findByEmail("missing@test.com");
-
-        // Assert
-        assertThat(result).isEmpty();
-    }
-
-    @Test
     void getAllUsersShouldReturnAllPersistedUsers() {
         // Arrange
         userService.createUser("Kevin", "kevin@test.com", "password-one");
@@ -119,21 +65,4 @@ class UserServiceIntegrationTest extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder("kevin@test.com", "alex@test.com");
     }
 
-    @Test
-    void deleteUserShouldRemoveUserFromDatabase() {
-        // Arrange
-        UserEntity savedUser = userService.createUser(
-                "Kevin",
-                "kevin@test.com",
-                "encoded-password"
-        );
-
-        // Act
-        userService.deleteUser(savedUser.getId());
-
-        // Assert
-        Optional<UserEntity> result = userEntityRepository.findById(savedUser.getId());
-
-        assertThat(result).isEmpty();
-    }
 }

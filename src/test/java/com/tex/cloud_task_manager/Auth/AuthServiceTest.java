@@ -1,14 +1,20 @@
 package com.tex.cloud_task_manager.Auth;
 
-import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
-import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
-import com.tex.cloud_task_manager.Auth.service.AuthServiceImpl;
-import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
-import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenService;
-import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
-import com.tex.cloud_task_manager.Security.JwtService;
-import com.tex.cloud_task_manager.User.UserEntity;
-import com.tex.cloud_task_manager.User.service.UserService;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,22 +27,26 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
+import com.tex.cloud_task_manager.Auth.service.AuthServiceImpl;
+import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
+import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenService;
+import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
+import com.tex.cloud_task_manager.Security.JwtService;
+import com.tex.cloud_task_manager.User.UserEntity;
+import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.User.service.UserService;
+import com.tex.cloud_task_manager.common.exception.ConflictException;
+import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private UserEntityRepository userEntityRepository; 
 
     @Mock
     private CustomUserDetailsService customUserDetailsService;
@@ -60,6 +70,7 @@ class AuthServiceTest {
     private AuthServiceImpl authService;
 
     private UserEntity userEntity;
+
     private RefreshTokenEntity refreshTokenEntity;
 
     @BeforeEach
@@ -86,7 +97,7 @@ class AuthServiceTest {
     @Test
     void registerUserShouldCreateUserWhenEmailDoesNotExist() {
         // Arrange
-        when(userService.findByEmail("test@example.com"))
+        when(userEntityRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.empty());
 
         when(passwordEncoder.encode("password123"))
@@ -109,7 +120,7 @@ class AuthServiceTest {
         assertNull(response.refreshToken());
         assertNull(response.refreshTokenExpiration());
 
-        verify(userService).findByEmail("test@example.com");
+        verify(userEntityRepository).findByEmail("test@example.com");
         verify(passwordEncoder).encode("password123");
         verify(userService).createUser("Kevin", "test@example.com", "encoded-password");
 
@@ -118,34 +129,29 @@ class AuthServiceTest {
         verifyNoInteractions(refreshTokenService);
     }
 
-    @Test
-    void registerUserShouldNotCreateUserWhenEmailAlreadyExists() {
-        // Arrange
-        when(userService.findByEmail("test@example.com"))
-                .thenReturn(Optional.of(userEntity));
+   @Test
+void registerUserShouldThrowConflictWhenEmailAlreadyExists() {
+    // Arrange
+    when(userEntityRepository.findByEmail("test@example.com"))
+            .thenReturn(Optional.of(userEntity));
 
-        // Act
-        AuthResponse response = authService.registerUser(
-                "Kevin",
-                "test@example.com",
-                "password123"
-        );
 
-        // Assert
-        assertEquals("User already exists for this email", response.message());
-        assertNull(response.token());
-        assertNull(response.tokenExpiration());
-        assertNull(response.refreshToken());
-        assertNull(response.refreshTokenExpiration());
+     assertThatThrownBy(() -> authService.registerUser(
+             "Kevin",
+             "test@example.com",
+             "password123"
+     ))
+             .isInstanceOf(ConflictException.class)
+             .hasMessageContaining("Email is already in use");
 
-        verify(userService).findByEmail("test@example.com");
-        verify(userService, never()).createUser(anyString(), anyString(), anyString());
-        verify(passwordEncoder, never()).encode(anyString());
+    verify(userEntityRepository).findByEmail("test@example.com");
+    verify(userService, never()).createUser(anyString(), anyString(), anyString());
+    verify(passwordEncoder, never()).encode(anyString());
 
-        verifyNoInteractions(authenticationManager);
-        verifyNoInteractions(jwtService);
-        verifyNoInteractions(refreshTokenService);
-    }
+    verifyNoInteractions(authenticationManager);
+    verifyNoInteractions(jwtService);
+    verifyNoInteractions(refreshTokenService);
+}
 
     @Test
     void loginUserShouldReturnTokensWhenCredentialsAreValid() {
@@ -202,15 +208,9 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        // Act
-        AuthResponse response = authService.loginUser(email, password);
-
-        // Assert
-        assertEquals("Invalid credentials", response.message());
-        assertNull(response.token());
-        assertNull(response.tokenExpiration());
-        assertNull(response.refreshToken());
-        assertNull(response.refreshTokenExpiration());
+       assertThatThrownBy(() -> authService.loginUser(email, password))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Invalid credentials");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
 
@@ -293,17 +293,12 @@ class AuthServiceTest {
         when(refreshTokenService.getRefreshTokenNotRevoked(refreshToken))
                 .thenReturn(null);
 
-        // Act
-        AuthResponse response = authService.refresh(refreshToken, email);
-
-        // Assert
-        assertEquals("Invalid refresh token", response.message());
-        assertNull(response.token());
-        assertNull(response.tokenExpiration());
-        assertNull(response.refreshToken());
-        assertNull(response.refreshTokenExpiration());
+         assertThatThrownBy(() -> authService.refresh(refreshToken,email))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("Invalid refresh token");
 
         verify(refreshTokenService).getRefreshTokenNotRevoked(refreshToken);
+        
         verifyNoInteractions(jwtService);
     }
 }

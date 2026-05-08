@@ -17,13 +17,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import com.tex.cloud_task_manager.User.UserEntity;
-import com.tex.cloud_task_manager.User.service.UserService;
+import com.tex.cloud_task_manager.User.UserEntityRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class CustomUserDetailServiceTest {
 
         @Mock
-        private UserService userService; 
+        private UserEntityRepository userEntityRepository; 
 
         @InjectMocks
         private CustomUserDetailsService customService;
@@ -44,7 +44,7 @@ public class CustomUserDetailServiceTest {
         @Test
         public void testLoadUserByUsername_success() {
 
-            when(userService.findByEmail("test@example.com")).thenReturn(Optional.of(userEntity));
+            when(userEntityRepository.findByEmail("test@example.com")).thenReturn(Optional.of(userEntity));
 
             UserDetails userDetails = customService.loadUserByUsername("test@example.com");
 
@@ -56,7 +56,7 @@ public class CustomUserDetailServiceTest {
         @Test
         public void testLoadUserByUsername_UserNotFound() {
 
-            when(userService.findByEmail("test@example.com")).thenReturn(Optional.empty());
+            when(userEntityRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
             
             UsernameNotFoundException exception = assertThrows(
 
@@ -64,7 +64,7 @@ public class CustomUserDetailServiceTest {
                 () -> customService.loadUserByUsername("test@example.com")
 
             );
-            assertEquals("User not found", exception.getMessage());
+            assertEquals("User not found with email: test@example.com", exception.getMessage());
         }
 
 }

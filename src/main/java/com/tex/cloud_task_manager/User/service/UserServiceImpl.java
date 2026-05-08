@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,25 +27,6 @@ public class UserServiceImpl implements UserService {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(null)
                 .build();
-        return saveUserEntity(user);
-    }
-
-    @Override
-    public Optional<UserEntity> getUserById(Long id) {
-        return userEntityRepository.findById(id);
-    }
-
-    @Override
-    public void deleteUser(Long id) {
-        userEntityRepository.deleteById(id);
-    }
-
-    @Override
-    public Optional<UserEntity> findByEmail(String email) {
-        return userEntityRepository.findByEmail(email);
-    }
-
-    private UserEntity saveUserEntity(UserEntity user) {
         return userEntityRepository.save(user);
     }
 
