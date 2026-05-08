@@ -1,6 +1,6 @@
 package com.tex.cloud_task_manager.Auth;
 
-import com.tex.cloud_task_manager.Auth.response_request.AuthApiReponse;
+import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
 import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
 import com.tex.cloud_task_manager.Auth.service.AuthServiceImpl;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
@@ -225,7 +225,7 @@ class AuthServiceTest {
         String refreshToken = "raw-refresh-token";
 
         // Act
-        AuthApiReponse response = authService.logout(refreshToken);
+        AuthResponse response = authService.logout(refreshToken);
 
         // Assert
         assertInstanceOf(AuthResponse.class, response);

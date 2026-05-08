@@ -6,10 +6,10 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.tex.cloud_task_manager.Auth.response_request.Project.ProjectResponse;
 import com.tex.cloud_task_manager.Project.ProjectEntity;
 import com.tex.cloud_task_manager.Project.ProjectRepository;
 import com.tex.cloud_task_manager.Project.ProjectStatus;
+import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
 
 import lombok.RequiredArgsConstructor;

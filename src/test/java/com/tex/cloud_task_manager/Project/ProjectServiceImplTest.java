@@ -1,25 +1,28 @@
 package com.tex.cloud_task_manager.Project;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.tex.cloud_task_manager.Auth.response_request.Project.ProjectResponse;
-import com.tex.cloud_task_manager.Project.service.ProjectServiceImpl;
-import com.tex.cloud_task_manager.Security.CurrentUserService;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
+import com.tex.cloud_task_manager.Project.service.ProjectServiceImpl;
+import com.tex.cloud_task_manager.Security.CurrentUserService;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceImplTest {

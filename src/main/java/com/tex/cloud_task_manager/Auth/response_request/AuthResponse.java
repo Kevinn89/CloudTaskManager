@@ -6,7 +6,7 @@ public record AuthResponse(
     String tokenExpiration,
     String refreshToken,
     String refreshTokenExpiration
-) implements AuthApiReponse {
+) {
 
 
 }

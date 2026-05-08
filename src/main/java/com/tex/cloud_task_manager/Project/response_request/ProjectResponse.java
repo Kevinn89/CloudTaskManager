@@ -1,4 +1,4 @@
-package com.tex.cloud_task_manager.Auth.response_request.Project;
+package com.tex.cloud_task_manager.Project.response_request;
 
 import java.time.LocalDateTime;
 

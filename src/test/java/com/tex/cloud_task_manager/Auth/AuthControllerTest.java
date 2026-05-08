@@ -18,14 +18,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
-import com.tex.cloud_task_manager.Auth.response_request.RegisterRequest;
-import com.tex.cloud_task_manager.Auth.response_request.Login_out.LogOutRequest;
-import com.tex.cloud_task_manager.Auth.response_request.Login_out.LoginRequest;
-import com.tex.cloud_task_manager.Auth.response_request.RefreshToken.RefreshTokenRequest;
+import com.tex.cloud_task_manager.Auth.response_request.LogOutRequest;
+import com.tex.cloud_task_manager.Auth.response_request.LoginRequest;
 import com.tex.cloud_task_manager.Auth.service.AuthService;
+import com.tex.cloud_task_manager.RefreshToken.response_request.RefreshTokenRequest;
 import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenService;
 import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 import com.tex.cloud_task_manager.Security.JwtService;
+import com.tex.cloud_task_manager.User.response_request.RegisterRequest;
 import com.tex.cloud_task_manager.User.service.UserService;
 
 import tools.jackson.databind.ObjectMapper; //need to import this for objectMapper to work in spring boot 4

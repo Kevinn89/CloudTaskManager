@@ -16,10 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tex.cloud_task_manager.Auth.response_request.Project.ProjectResponse;
 import com.tex.cloud_task_manager.Project.ProjectEntity;
 import com.tex.cloud_task_manager.Project.ProjectRepository;
 import com.tex.cloud_task_manager.Project.ProjectStatus;
+import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Project.service.ProjectService;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
 

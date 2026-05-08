@@ -1,7 +1,9 @@
 package com.tex.cloud_task_manager.Project;
 
+import java.net.URI;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tex.cloud_task_manager.Auth.response_request.Project.CreateProjectRequest;
-import com.tex.cloud_task_manager.Auth.response_request.Project.ProjectResponse;
-import com.tex.cloud_task_manager.Auth.response_request.Project.UpdateProjectRequest;
+import com.tex.cloud_task_manager.Project.response_request.CreateProjectRequest;
+import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
+import com.tex.cloud_task_manager.Project.response_request.UpdateProjectRequest;
 import com.tex.cloud_task_manager.Project.service.ProjectService;
 
 import jakarta.validation.Valid;
@@ -28,9 +30,13 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @PostMapping("/create")
-    public ResponseEntity<ProjectResponse> createProject( @Valid @RequestBody CreateProjectRequest request) {
-        return ResponseEntity.ok((ProjectResponse) projectService.createProject(request.name(), request.description()));
-    }
+    public ResponseEntity<ProjectResponse> createProject(@Valid @RequestBody CreateProjectRequest request) {
+        ProjectResponse response = projectService.createProject(
+                request.name(),
+                request.description()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+}
 
     @GetMapping("/{projectId}")
     public ResponseEntity<ProjectResponse> getProject(@PathVariable long projectId) {
@@ -42,7 +48,7 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.updateProject(request.projectId(), request.name(), request.description()));
     }
 
-    @DeleteMapping("/delete/{projectId}")
+    @DeleteMapping("/{projectId}")
     public ResponseEntity<ProjectResponse> deleteProject(@PathVariable long projectId) {
         return ResponseEntity.ok(projectService.deleteProject(projectId));
     }
