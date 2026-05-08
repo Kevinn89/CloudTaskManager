@@ -164,6 +164,7 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
 
     @Test
     void logoutShouldRevokeRefreshTokenThroughHttpEndpoint() throws Exception {
+       
         registerUser();
 
         String refreshToken = loginAndExtractRefreshToken();

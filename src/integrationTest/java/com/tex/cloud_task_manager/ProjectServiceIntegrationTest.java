@@ -23,7 +23,6 @@ import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Project.service.ProjectService;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
 
-@Transactional
 class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
