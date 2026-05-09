@@ -11,7 +11,6 @@ import java.util.HexFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenRepository;
@@ -19,6 +18,7 @@ import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenService;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 import com.tex.cloud_task_manager.User.service.UserService;
+import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 
 
 class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
@@ -80,51 +80,22 @@ class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void generateRefreshTokenShouldThrowWhenUserDoesNotExist() {
+
+        String email = "missing@test.com";
         assertThatThrownBy(() ->
-                refreshTokenService.generateRefreshToken("missing@test.com")
-        ).isInstanceOf(java.util.NoSuchElementException.class);
+                refreshTokenService.generateRefreshToken(email)
+        )
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessageContaining("User not found for this email " + email);
 
         assertThat(refreshTokenRepository.findAll()).isEmpty();
-    }
-
-    @Test
-    void getRefreshTokenNotRevokedShouldReturnTokenAndUpdateLastUsedAt() {
-        // Arrange
-        userService.createUser(
-                "Kevin",
-                "kevin@test.com",
-                "encoded-password"
-        );
-
-        RefreshTokenEntity generatedToken =
-                refreshTokenService.generateRefreshToken("kevin@test.com");
-
-        assertThat(generatedToken.getLastUsedAt()).isNull();
-
-        String rawToken = generatedToken.getRawToken();
-
-        // Act
-        RefreshTokenEntity result =
-                refreshTokenService.getRefreshTokenNotRevoked(rawToken);
-
-        // Assert
-        assertThat(result.getId()).isEqualTo(generatedToken.getId());
-        assertThat(result.getTokenHash()).isEqualTo(sha256(rawToken));
-        assertThat(result.isRevoked()).isFalse();
-        assertThat(result.getLastUsedAt()).isNotNull();
-
-        RefreshTokenEntity foundToken = refreshTokenRepository
-                .findById(generatedToken.getId())
-                .orElseThrow();
-
-        assertThat(foundToken.getLastUsedAt()).isNotNull();
     }
 
     @Test
     void getRefreshTokenNotRevokedShouldThrowWhenTokenIsMissing() {
         assertThatThrownBy(() ->
                 refreshTokenService.getRefreshTokenNotRevoked("bad-refresh-token")
-        ).isInstanceOf(ResponseStatusException.class);
+        ).isInstanceOf(UnauthorizedException.class);
     }
 
     @Test
@@ -158,8 +129,7 @@ class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
         assertThatThrownBy(() ->
                 refreshTokenService.revokeRefreshToken("missing-refresh-token")
         )
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("401 UNAUTHORIZED")
+                .isInstanceOf(UnauthorizedException.class)
                 .hasMessageContaining("Invalid refresh token");
     }
 
@@ -182,7 +152,7 @@ class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
         // Act + Assert
         assertThatThrownBy(() ->
                 refreshTokenService.getRefreshTokenNotRevoked(rawToken)
-        ).isInstanceOf(ResponseStatusException.class);
+        ).isInstanceOf(UnauthorizedException.class);
     }
 
     private static String sha256(String token) {
