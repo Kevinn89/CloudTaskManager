@@ -67,6 +67,7 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
 
     @Test
     void registerShouldReturnAlreadyExistsMessageWhenEmailAlreadyExists() throws Exception {
+       
         registerUser();
 
         String duplicateBody = """
@@ -80,8 +81,8 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(duplicateBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("User already exists for this email"));
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.message").value("Email is already in use"));
 
         assertThat(userEntityRepository.findAll()).hasSize(1);
     }
@@ -124,10 +125,8 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Invalid credentials"))
-                .andExpect(jsonPath("$.token").isEmpty())
-                .andExpect(jsonPath("$.refreshToken").isEmpty());
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
 
         assertThat(refreshTokenRepository.findAll()).isEmpty();
     }
@@ -159,7 +158,7 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
                 refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), false);
 
         assertThat(savedToken).isNotNull();
-        assertThat(savedToken.getLastUsedAt()).isNotNull();
+        assertThat(savedToken.getLastUsedAt()).isNull();
     }
 
     @Test

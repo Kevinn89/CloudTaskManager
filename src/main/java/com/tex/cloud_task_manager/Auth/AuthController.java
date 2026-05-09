@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tex.cloud_task_manager.Auth.response_request.AuthApiReponse;
 import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
 import com.tex.cloud_task_manager.Auth.response_request.LogOutRequest;
 import com.tex.cloud_task_manager.Auth.response_request.LoginRequest;

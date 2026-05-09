@@ -2,13 +2,11 @@ package com.tex.cloud_task_manager.User.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
-import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
