@@ -72,6 +72,7 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.findByIdAndUserId(projectId, userId).map(project -> {
             project.setName(name);
             project.setDescription(description);
+            project.setUpdatedAt(LocalDateTime.now());
             saveProject(project);
             return new ProjectResponse(project.getId(), project.getName(), project.getDescription(), 0, project.getCreatedAt(), project.getUpdatedAt(), project.getStatus());
         }).orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));

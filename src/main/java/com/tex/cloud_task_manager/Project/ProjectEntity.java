@@ -3,8 +3,6 @@ package com.tex.cloud_task_manager.Project;
 
 import java.time.LocalDateTime;
 
-import org.springframework.security.core.parameters.P;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
