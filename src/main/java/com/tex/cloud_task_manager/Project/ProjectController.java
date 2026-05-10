@@ -1,6 +1,5 @@
 package com.tex.cloud_task_manager.Project;
 
-import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;

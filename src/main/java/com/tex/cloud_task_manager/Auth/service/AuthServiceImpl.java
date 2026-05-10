@@ -92,6 +92,4 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse("Token refreshed successfully", newToken, jwtService.extractExpiration(newToken), refreshToken, refresh.getExpiresAt().toString());
     }
 
-    
-
 }
