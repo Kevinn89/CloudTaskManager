@@ -57,8 +57,8 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.getUserProjects());
     }
 
-    // public ResponseEntity<?> getProjectTasks() {
-    //     return ResponseEntity.ok("List of tasks for the project");
+    // public ResponseEntity<?> getProjectTasks(@PathVariable long projectId) {
+    //     return ResponseEntity.ok(projectService.get);
     // }
 
     // public ResponseEntity<?> addTaskToProject() {

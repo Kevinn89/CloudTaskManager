@@ -37,15 +37,15 @@ public class TaskServiceImpl implements TaskService {
 
         long userId = getCurrentUserId();
 
-        projectRepository.findByIdAndUserId(projectId,userId).orElseThrow(() -> new UnauthorizedException("Invalid Project"));
+        var project = projectRepository.findByIdAndUserId(projectId,userId).orElseThrow(() -> new ResourceNotFoundException("Project not found for projectId " + projectId));
 
         TaskEntity taskEntity = TaskEntity.builder()
         .title(title)
+        .project(project)
         .userId(userId)
         .description(description)
-        .projectId(projectId)
         .priority(Priority.LOW)
-        .status(TaskStatus.TODO)
+        .taskStatus(TaskStatus.TODO)
         .createdAt(LocalDateTime.now())
         .build();
 
@@ -55,7 +55,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<TaskResponse> getTasks(long projectId) {
 
-        var project = projectRepository.findByIdAndUserId(projectId,getCurrentUserId()).orElseThrow(() -> new UnauthorizedException("Invalid Project"));
+        var project = projectRepository.findByIdAndUserId(projectId,getCurrentUserId()).orElseThrow(() -> new ResourceNotFoundException("Project not found for projectId " + projectId));
 
         List<TaskEntity> taskEntity = taskRepository.findByProjectIdAndUserId(projectId,project.getUserId());
 
@@ -65,16 +65,17 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TaskResponse updateTask(long taskId,long projectId, String title, String description, String taskStatus, String dueDate, String completionDate, String priority) {
            
-        var project = projectRepository.findByIdAndUserId(projectId,getCurrentUserId()).orElseThrow(() -> new UnauthorizedException("Invalid Project"));
+        var project = projectRepository.findByIdAndUserId(projectId,getCurrentUserId()).orElseThrow(() -> new ResourceNotFoundException("Project not found for projectId " + projectId));
 
         TaskEntity taskEntity = taskRepository.findByIdAndProjectIdAndUserId(taskId, project.getId(),project.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Task not found for project " + projectId));
 
         taskEntity.setDescription(description);
         taskEntity.setDueDate(LocalDate.parse(dueDate));
         taskEntity.setTitle(title);
-        taskEntity.setStatus(TaskStatus.valueOf(taskStatus));
+        taskEntity.setTaskStatus(TaskStatus.valueOf(taskStatus));
         taskEntity.setCompletionDate(LocalDate.parse(completionDate));
         taskEntity.setPriority(Priority.valueOf(priority));
+        taskEntity.setProject(project);
 
       return TaskResponse.from(taskRepository.save(taskEntity));
      

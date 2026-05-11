@@ -3,7 +3,9 @@ package com.tex.cloud_task_manager.Task.response_request;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.tex.cloud_task_manager.Task.Priority;
 import com.tex.cloud_task_manager.Task.TaskEntity;
+import com.tex.cloud_task_manager.Task.TaskStatus;
 
 
 public record TaskResponse(
@@ -12,8 +14,8 @@ public record TaskResponse(
         Long userId,
         String title,
         String description,
-        String status,
-        String priority,
+        TaskStatus taskStatus,
+        Priority priority,
         LocalDate dueDate,
         LocalDate completionDate,
         LocalDateTime createdAt,
@@ -22,12 +24,12 @@ public record TaskResponse(
     public static TaskResponse from(TaskEntity task) {
         return new TaskResponse(
                 task.getId(),
-                task.getProjectId(),
-                task.getId(),
+                task.getProject().getId(),
+                task.getUserId(),
                 task.getTitle(),
                 task.getDescription(),
-                task.getStatus().name(),
-                task.getPriority().name(),
+                task.getTaskStatus(),
+                task.getPriority(),
                 task.getDueDate(),
                 task.getCompletionDate(),
                 task.getCreatedAt(),

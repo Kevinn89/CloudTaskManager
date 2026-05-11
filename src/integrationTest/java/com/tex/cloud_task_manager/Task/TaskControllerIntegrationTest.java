@@ -103,7 +103,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                 .andExpect(jsonPath("$.projectId").value(ownerProject.getId()))
                 .andExpect(jsonPath("$.title").value("Create Task API"))
                 .andExpect(jsonPath("$.description").value("Build task endpoint"))
-                .andExpect(jsonPath("$.status").value("TODO"))
+                .andExpect(jsonPath("$.taskStatus").value("TODO"))
                 .andExpect(jsonPath("$.priority").value("LOW"));
 
         TaskEntity savedTask = taskRepository.findAll()
@@ -111,17 +111,17 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertThat(savedTask.getProjectId()).isEqualTo(ownerProject.getId());
+        assertThat(savedTask.getProject().getId()).isEqualTo(ownerProject.getId());
         assertThat(savedTask.getUserId()).isEqualTo(owner.getId());
         assertThat(savedTask.getTitle()).isEqualTo("Create Task API");
         assertThat(savedTask.getDescription()).isEqualTo("Build task endpoint");
-        assertThat(savedTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(savedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
         assertThat(savedTask.getPriority()).isEqualTo(Priority.LOW);
         assertThat(savedTask.getCreatedAt()).isNotNull();
     }
 
     @Test
-    void createShouldReturn401AndNotPersistTaskWhenAuthenticatedUserDoesNotOwnProject() throws Exception {
+    void createShouldReturn404AndNotPersistTaskWhenAuthenticatedUserDoesNotOwnProject() throws Exception {
         // Why: proves user cannot create task inside another user's project.
         String token = loginAndExtractAccessToken("kevin@test.com", "Password123!");
 
@@ -135,8 +135,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                                   "projectId": %d
                                 }
                                 """.formatted(otherUserProject.getId())))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid Project"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Project not found for projectId " + otherUserProject.getId()));
 
         assertThat(taskRepository.findAll()).isEmpty();
     }
@@ -177,7 +177,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     }
 
     @Test
-    void getTasksShouldReturn401WhenProjectBelongsToAnotherUser() throws Exception {
+    void getTasksShouldReturn404WhenProjectBelongsToAnotherUser() throws Exception {
         // Why: proves authenticated user cannot list another user's project tasks.
         String token = loginAndExtractAccessToken("kevin@test.com", "Password123!");
 
@@ -190,8 +190,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
 
         mockMvc.perform(get("/api/task/project/{projectId}", otherUserProject.getId())
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid Project"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Project not found for projectId " + otherUserProject.getId()));
     }
 
     @Test
@@ -226,13 +226,13 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                 .andExpect(jsonPath("$.projectId").value(ownerProject.getId()))
                 .andExpect(jsonPath("$.title").value("Updated title"))
                 .andExpect(jsonPath("$.description").value("Updated description"))
-                .andExpect(jsonPath("$.status").value("DONE"));
+                .andExpect(jsonPath("$.taskStatus").value("DONE"));
 
         TaskEntity updatedTask = taskRepository.findById(task.getId()).orElseThrow();
 
         assertThat(updatedTask.getTitle()).isEqualTo("Updated title");
         assertThat(updatedTask.getDescription()).isEqualTo("Updated description");
-        assertThat(updatedTask.getStatus()).isEqualTo(TaskStatus.DONE);
+        assertThat(updatedTask.getTaskStatus()).isEqualTo(TaskStatus.DONE);
         assertThat(updatedTask.getDueDate()).isEqualTo(LocalDate.parse("2026-06-01"));
         assertThat(updatedTask.getCompletionDate()).isEqualTo(LocalDate.parse("2026-06-02"));
     }
@@ -271,11 +271,11 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                 .orElseThrow();
 
         assertThat(unchangedTask.getTitle()).isEqualTo("Task in second project");
-        assertThat(unchangedTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(unchangedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
     }
 
     @Test
-    void updateShouldReturn401AndLeaveTaskUnchangedWhenProjectBelongsToAnotherUser() throws Exception {
+    void updateShouldReturn404AndLeaveTaskUnchangedWhenProjectBelongsToAnotherUser() throws Exception {
         // Why: proves project ownership check blocks update before task can change.
         String token = loginAndExtractAccessToken("kevin@test.com", "Password123!");
 
@@ -301,14 +301,14 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                                   "priority": "HIGH"
                                 }
                                 """.formatted(otherUserTask.getId(), otherUserProject.getId())))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid Project"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Project not found for projectId " + otherUserProject.getId()));
 
         TaskEntity unchangedTask = taskRepository.findById(otherUserTask.getId())
                 .orElseThrow();
 
         assertThat(unchangedTask.getTitle()).isEqualTo("Other user task");
-        assertThat(unchangedTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(unchangedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
     }
 
     @Test
@@ -416,14 +416,16 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     }
 
     private TaskEntity createTask(String title, String description, Long projectId, Long userId) {
+        ProjectEntity project = projectRepository.findById(projectId).orElseThrow();
+
         return taskRepository.save(
                 TaskEntity.builder()
                         .title(title)
                         .description(description)
-                        .projectId(projectId)
+                        .project(project)
                         .userId(userId)
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .createdAt(LocalDateTime.now())
                         .build()
         );

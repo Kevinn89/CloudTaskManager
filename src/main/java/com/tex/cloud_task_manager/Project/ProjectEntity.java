@@ -2,12 +2,19 @@ package com.tex.cloud_task_manager.Project;
 
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.Task.TaskEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +25,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "projects")
+@Table(name = "project")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -39,5 +46,12 @@ public class ProjectEntity {
         private LocalDateTime updatedAt;
         @Column(name = "status", nullable = false)
         private ProjectStatus status;
+        @Column(name = "priority", nullable = false)
+        @Builder.Default
+        private Priority priority = Priority.LOW;
+        
+        @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
+        @Builder.Default
+        private List<TaskEntity> tasks = new ArrayList<>();
 
 }
