@@ -31,6 +31,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     boolean skip = path.startsWith("/api/auth/")
             || path.startsWith("/h2-console")
+            || path.startsWith("/swagger-ui")
+            || path.startsWith("/v3/api-docs")
+            || path.equals("/swagger-ui.html")
             || path.startsWith("/api/auth/project");
 
     return skip;

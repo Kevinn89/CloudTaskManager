@@ -43,13 +43,13 @@ public class TaskController {
 
 
     @PutMapping("/update")
-    public ResponseEntity<TaskResponse> updateProject(@Valid @RequestBody UpdateTaskRequest request) {
+    public ResponseEntity<TaskResponse> updateTask(@Valid @RequestBody UpdateTaskRequest request) {
         return ResponseEntity.ok(taskService.updateTask(request.id(), request.projectId(), request.title(), request.description(), request.taskStatus(),
          request.dueDate(), request.completionDate(), request.priority()));
     }
 
     @DeleteMapping("/{taskId}/project/{projectId}")
-    public ResponseEntity<TaskResponse> deleteProject(@PathVariable long projectId, @PathVariable long taskId ) {
+    public ResponseEntity<TaskResponse> deleteTask(@PathVariable long projectId, @PathVariable long taskId ) {
 
              taskService.deleteTask(projectId,taskId);
              
