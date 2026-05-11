@@ -23,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Project.service.ProjectServiceImpl;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
-import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.Project.ProjectPriority;
 import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +50,7 @@ class ProjectServiceImplTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(null)
                 .status(ProjectStatus.ACTIVE)
-                .priority(Priority.LOW)
+                .priority(ProjectPriority.LOW)
                 .build();
 
         project.setTasks(List.of());
@@ -81,7 +81,7 @@ class ProjectServiceImplTest {
         assertEquals("Project One", savedProject.getName());
         assertEquals("Project One Description", savedProject.getDescription());
         assertEquals(ProjectStatus.ACTIVE, savedProject.getStatus());
-        assertEquals(Priority.LOW, savedProject.getPriority());
+        assertEquals(ProjectPriority.LOW, savedProject.getPriority());
         assertNotNull(savedProject.getCreatedAt());
 
         assertEquals(1L, response.id());
