@@ -24,6 +24,7 @@ import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Project.service.ProjectServiceImpl;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
 import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceImplTest {
@@ -116,8 +117,8 @@ class ProjectServiceImplTest {
         when(currentUserService.getCurrentUserId()).thenReturn(10L);
         when(projectRepository.findByUserId(10L)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
                 () -> projectService.getUserProjects()
         );
 
