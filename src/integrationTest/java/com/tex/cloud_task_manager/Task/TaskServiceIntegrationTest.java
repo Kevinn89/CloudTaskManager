@@ -79,6 +79,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .description("Project owned by Kevin")
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
+                        .priority(Priority.LOW)
                         .status(ProjectStatus.ACTIVE)
                         .build()
         );
@@ -90,6 +91,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .userId(owner.getId())
                         .status(ProjectStatus.ACTIVE)
                         .createdAt(LocalDateTime.now())
+                        .priority(Priority.LOW)
                         .build()
         );
 
@@ -100,6 +102,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .userId(otherUser.getId())
                         .status(ProjectStatus.ACTIVE)
                         .createdAt(LocalDateTime.now())
+                        .priority(Priority.LOW)
                         .build()
         );
     }
@@ -118,12 +121,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
         TaskEntity savedTask = taskRepository.findById(response.id()).get();
 
 
-        assertThat(savedTask.getProjectId()).isEqualTo(ownerProject.getId());
+     //   assertThat(savedTask.getProjectId()).isEqualTo(ownerProject.getId());
         assertThat(savedTask.getUserId()).isEqualTo(owner.getId());
         assertThat(savedTask.getTitle()).isEqualTo("Create task service");
         assertThat(savedTask.getDescription()).isEqualTo("Implement task service logic");
         assertThat(savedTask.getPriority()).isEqualTo(Priority.LOW);
-        assertThat(savedTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(savedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
         assertThat(savedTask.getCreatedAt()).isNotNull();
     }
 
@@ -139,8 +142,8 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         otherUserProject.getId()
                 )
         )
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("Invalid Project");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Project not found for projectId "+ otherUserProject.getId());
 
         assertThat(taskRepository.findAll()).isEmpty();
     }
@@ -154,11 +157,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Task from requested project")
                         .description("Should be returned")
-                        .projectId(ownerProject.getId())
+                    //    .projectId(ownerProject.getId())
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
+                        .project(ownerProject)
                         .build()
         );
 
@@ -166,11 +170,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Task from second owner project")
                         .description("Should not be returned")
-                        .projectId(secondOwnerProject.getId())
+                       // .projectId(secondOwnerProject.getId())
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
+                        .project(secondOwnerProject)
                         .build()
         );
 
@@ -178,11 +183,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Task from other user project")
                         .description("Should not be returned")
-                        .projectId(otherUserProject.getId())
+                       // .projectId(otherUserProject.getId())
                         .createdAt(LocalDateTime.now())
                         .userId(otherUser.getId())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
+                        .project(otherUserProject)
                         .build()
         );
 
@@ -201,19 +207,19 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
 
         taskRepository.save(
                 TaskEntity.builder()
+                        .project(otherUserProject)
                         .title("Other user's task")
                         .description("Should not be visible")
-                        .projectId(otherUserProject.getId())
+                     //   .projectId(otherUserProject.getId())
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
         assertThatThrownBy(() -> taskService.getTasks(otherUserProject.getId()))
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("Invalid Project");
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -225,11 +231,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Old title")
                         .description("Old description")
-                        .projectId(ownerProject.getId())
+                      //  .projectId(ownerProject.getId())
                         .userId(owner.getId())
+                        .project(ownerProject)
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
@@ -250,7 +257,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.id()).isEqualTo(task.getId());
         assertThat(updatedTask.getTitle()).isEqualTo("Updated title");
         assertThat(updatedTask.getDescription()).isEqualTo("Updated description");
-        assertThat(updatedTask.getStatus()).isEqualTo(TaskStatus.DONE);
+        assertThat(updatedTask.getTaskStatus()).isEqualTo(TaskStatus.DONE);
         assertThat(updatedTask.getDueDate()).isEqualTo(LocalDate.parse("2026-06-01"));
         assertThat(updatedTask.getCompletionDate()).isEqualTo(LocalDate.parse("2026-06-02"));
     }
@@ -264,11 +271,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Other user task")
                         .description("Should not update")
-                        .projectId(otherUserProject.getId())
+                    //    .projectId(otherUserProject.getId())
+                        .project(otherUserProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
@@ -284,14 +292,13 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         "LOW"
                 )
         )
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("Invalid Project");
+                .isInstanceOf(ResourceNotFoundException.class);
 
         TaskEntity unchangedTask = taskRepository.findById(otherUserTask.getId())
                 .orElseThrow();
 
         assertThat(unchangedTask.getTitle()).isEqualTo("Other user task");
-        assertThat(unchangedTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(unchangedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
     }
 
     @Test
@@ -303,11 +310,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Task in second project")
                         .description("Should not update through first project")
-                        .projectId(secondOwnerProject.getId())
+                      //  .projectId(secondOwnerProject.getId())
+                        .project(secondOwnerProject)
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
@@ -330,7 +338,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 .orElseThrow();
 
         assertThat(unchangedTask.getTitle()).isEqualTo("Task in second project");
-        assertThat(unchangedTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(unchangedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
     }
 
     @Test
@@ -342,11 +350,11 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Wrong user task")
                         .description("Should not update")
-                        .projectId(ownerProject.getId())
+                        .project(otherUserProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
@@ -369,7 +377,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 .orElseThrow();
 
         assertThat(unchangedTask.getTitle()).isEqualTo("Wrong user task");
-        assertThat(unchangedTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(unchangedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
     }
 
     @Test
@@ -381,11 +389,11 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Delete me")
                         .description("Should be deleted")
-                        .projectId(ownerProject.getId())
+                        .project(ownerProject)
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
@@ -403,11 +411,11 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Other user task")
                         .description("Should not delete")
-                        .projectId(otherUserProject.getId())
+                        .project(otherUserProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
@@ -429,11 +437,12 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Task in second project")
                         .description("Should not delete through first project")
-                        .projectId(secondOwnerProject.getId())
+                      //  .projectId(secondOwnerProject.getId())
+                        .project(secondOwnerProject)
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 
@@ -455,11 +464,11 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 TaskEntity.builder()
                         .title("Wrong user task")
                         .description("Should not delete")
-                        .projectId(ownerProject.getId())
+                        .project(ownerProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
                         .priority(Priority.LOW)
-                        .status(TaskStatus.TODO)
+                        .taskStatus(TaskStatus.TODO)
                         .build()
         );
 

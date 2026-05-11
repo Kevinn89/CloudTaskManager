@@ -23,6 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Project.service.ProjectServiceImpl;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
+import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceImplTest {
@@ -48,7 +50,10 @@ class ProjectServiceImplTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(null)
                 .status(ProjectStatus.ACTIVE)
+                .priority(Priority.LOW)
                 .build();
+
+        project.setTasks(List.of());
     }
 
     @Test
@@ -58,6 +63,7 @@ class ProjectServiceImplTest {
         when(projectRepository.save(any(ProjectEntity.class))).thenAnswer(invocation -> {
             ProjectEntity savedProject = invocation.getArgument(0);
             savedProject.setId(1L);
+            savedProject.setTasks(List.of());
             return savedProject;
         });
 
@@ -75,6 +81,7 @@ class ProjectServiceImplTest {
         assertEquals("Project One", savedProject.getName());
         assertEquals("Project One Description", savedProject.getDescription());
         assertEquals(ProjectStatus.ACTIVE, savedProject.getStatus());
+        assertEquals(Priority.LOW, savedProject.getPriority());
         assertNotNull(savedProject.getCreatedAt());
 
         assertEquals(1L, response.id());
@@ -87,7 +94,7 @@ class ProjectServiceImplTest {
     @Test
     void getUserProjectsShouldOnlyAskRepositoryForCurrentUsersProjects() {
         when(currentUserService.getCurrentUserId()).thenReturn(10L);
-        when(projectRepository.findByUserId(10L)).thenReturn(List.of(project));
+        when(projectRepository.findByUserId(10L)).thenReturn(Optional.of(List.of(project)));
 
         List<ProjectResponse> responses = projectService.getUserProjects();
 
@@ -98,7 +105,24 @@ class ProjectServiceImplTest {
         assertEquals(1L, response.id());
         assertEquals("Project One", response.name());
         assertEquals("Project One Description", response.description());
+        assertEquals(0, response.taskCount());
         assertEquals(ProjectStatus.ACTIVE, response.status());
+
+        verify(projectRepository).findByUserId(10L);
+        verify(projectRepository, never()).findAll();
+    }
+
+    @Test
+    void getUserProjectsShouldThrowWhenNoProjectsFoundForCurrentUser() {
+        when(currentUserService.getCurrentUserId()).thenReturn(10L);
+        when(projectRepository.findByUserId(10L)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> projectService.getUserProjects()
+        );
+
+        assertEquals("No Projects found for user 10", exception.getMessage());
 
         verify(projectRepository).findByUserId(10L);
         verify(projectRepository, never()).findAll();
@@ -114,6 +138,7 @@ class ProjectServiceImplTest {
         assertEquals(1L, response.id());
         assertEquals("Project One", response.name());
         assertEquals("Project One Description", response.description());
+        assertEquals(0, response.taskCount());
 
         verify(projectRepository).findByIdAndUserId(1L, 10L);
         verify(projectRepository, never()).findById(any());
@@ -159,6 +184,7 @@ class ProjectServiceImplTest {
         assertEquals(10L, updatedProject.getUserId());
         assertEquals("Updated Project", updatedProject.getName());
         assertEquals("Updated Description", updatedProject.getDescription());
+        assertNotNull(updatedProject.getUpdatedAt());
 
         verify(projectRepository).findByIdAndUserId(1L, 10L);
         verify(projectRepository, never()).findById(any());
@@ -190,6 +216,7 @@ class ProjectServiceImplTest {
 
         assertEquals(1L, response.id());
         assertEquals("Project One", response.name());
+        assertEquals(0, response.taskCount());
 
         verify(projectRepository).findByIdAndUserId(1L, 10L);
         verify(projectRepository).delete(project);

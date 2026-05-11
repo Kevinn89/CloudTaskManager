@@ -70,12 +70,12 @@ class TaskServiceImplTest {
 
         TaskEntity savedTask = TaskEntity.builder()
                 .id(taskId)
-                .projectId(projectId)
+                .project(ownedProject)
                 .userId(userId)
                 .title("Create Task API")
                 .description("Build task endpoints")
                 .priority(Priority.LOW)
-                .status(TaskStatus.TODO)
+                .taskStatus(TaskStatus.TODO)
                 .build();
 
         when(taskRepository.save(any(TaskEntity.class))).thenReturn(savedTask);
@@ -89,17 +89,17 @@ class TaskServiceImplTest {
         assertEquals(taskId, response.id());
         assertEquals(projectId, response.projectId());
         assertEquals("Create Task API", response.title());
-        assertEquals("TODO", response.status());
-        assertEquals("LOW", response.priority());
+        assertEquals(TaskStatus.TODO, response.taskStatus());
+        assertEquals(Priority.LOW, response.priority());
 
         ArgumentCaptor<TaskEntity> captor = ArgumentCaptor.forClass(TaskEntity.class);
         verify(taskRepository).save(captor.capture());
 
         TaskEntity taskToSave = captor.getValue();
 
-        assertEquals(projectId, taskToSave.getProjectId());
+        assertEquals(ownedProject, taskToSave.getProject());
         assertEquals(userId, taskToSave.getUserId());
-        assertEquals(TaskStatus.TODO, taskToSave.getStatus());
+        assertEquals(TaskStatus.TODO, taskToSave.getTaskStatus());
         assertEquals(Priority.LOW, taskToSave.getPriority());
         assertNotNull(taskToSave.getCreatedAt());
 
@@ -113,7 +113,7 @@ class TaskServiceImplTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(
-                UnauthorizedException.class,
+                ResourceNotFoundException.class,
                 () -> taskService.create("Illegal Task", "Should not save", projectId)
         );
 
@@ -128,22 +128,22 @@ class TaskServiceImplTest {
 
         TaskEntity taskOne = TaskEntity.builder()
                 .id(1L)
-                .projectId(projectId)
+                .project(ownedProject)
                 .userId(userId)
                 .title("Task One")
                 .description("First task")
                 .priority(Priority.LOW)
-                .status(TaskStatus.TODO)
+                .taskStatus(TaskStatus.TODO)
                 .build();
 
         TaskEntity taskTwo = TaskEntity.builder()
                 .id(2L)
-                .projectId(projectId)
+                .project(ownedProject)
                 .userId(userId)
                 .title("Task Two")
                 .description("Second task")
                 .priority(Priority.LOW)
-                .status(TaskStatus.IN_PROGRESS)
+                .taskStatus(TaskStatus.IN_PROGRESS)
                 .build();
 
         when(taskRepository.findByProjectIdAndUserId(projectId, userId))
@@ -164,7 +164,7 @@ class TaskServiceImplTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(
-                UnauthorizedException.class,
+                ResourceNotFoundException.class,
                 () -> taskService.getTasks(projectId)
         );
 
@@ -179,12 +179,12 @@ class TaskServiceImplTest {
 
         TaskEntity existingTask = TaskEntity.builder()
                 .id(taskId)
-                .projectId(projectId)
+                .project(ownedProject)
                 .userId(userId)
                 .title("Old title")
                 .description("Old description")
                 .priority(Priority.LOW)
-                .status(TaskStatus.TODO)
+                .taskStatus(TaskStatus.TODO)
                 .build();
 
         when(taskRepository.findByIdAndProjectIdAndUserId(taskId, projectId, userId))
@@ -208,7 +208,7 @@ class TaskServiceImplTest {
         assertEquals(projectId, response.projectId());
         assertEquals("Updated title", response.title());
         assertEquals("Updated description", response.description());
-        assertEquals("DONE", response.status());
+        assertEquals(TaskStatus.DONE, response.taskStatus());
         assertEquals(LocalDate.parse("2026-06-01"), response.dueDate());
         assertEquals(LocalDate.parse("2026-06-02"), response.completionDate());
 
@@ -223,7 +223,7 @@ class TaskServiceImplTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(
-                UnauthorizedException.class,
+                ResourceNotFoundException.class,
                 () -> taskService.updateTask(
                         taskId,
                         projectId,
@@ -274,12 +274,12 @@ class TaskServiceImplTest {
 
         TaskEntity existingTask = TaskEntity.builder()
                 .id(taskId)
-                .projectId(projectId)
+                .project(ownedProject)
                 .userId(userId)
                 .title("Delete me")
                 .description("Delete this task")
                 .priority(Priority.LOW)
-                .status(TaskStatus.TODO)
+                .taskStatus(TaskStatus.TODO)
                 .build();
 
         when(taskRepository.findByIdAndProjectIdAndUserId(taskId, projectId, userId))

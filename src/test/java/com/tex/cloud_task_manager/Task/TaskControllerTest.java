@@ -49,10 +49,11 @@ class TaskControllerTest {
         TaskResponse response = new TaskResponse(
                 50L,
                 10L,
-                null, "Create task API",
+                1L, 
+                "Create task API",
                 "Build task endpoint",
-                "TODO",
-                "LOW",
+                TaskStatus.TODO,
+                Priority.LOW,
                 null,
                 null,
                 LocalDateTime.now(),
@@ -75,7 +76,7 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.id").value(50))
                 .andExpect(jsonPath("$.projectId").value(10))
                 .andExpect(jsonPath("$.title").value("Create task API"))
-                .andExpect(jsonPath("$.status").value("TODO"))
+                .andExpect(jsonPath("$.taskStatus").value("TODO"))
                 .andExpect(jsonPath("$.priority").value("LOW"));
 
         verify(taskService).create("Create task API", "Build task endpoint", 10L);
@@ -110,8 +111,8 @@ class TaskControllerTest {
                 10L,
                 null, "Task one",
                 "First task",
-                "TODO",
-                "LOW",
+               TaskStatus.TODO,
+                Priority.LOW,
                 null,
                 null,
                 LocalDateTime.now(),
@@ -123,8 +124,8 @@ class TaskControllerTest {
                 10L,
                 null, "Task two",
                 "Second task",
-                "IN_PROGRESS",
-                "LOW",
+                TaskStatus.IN_PROGRESS,
+                Priority.HIGH,
                 null,
                 null,
                 LocalDateTime.now(),
@@ -166,8 +167,8 @@ class TaskControllerTest {
                 10L,
                 null, "Updated title",
                 "Updated description",
-                "DONE",
-                "HIGH",
+                TaskStatus.DONE,
+                Priority.HIGH,
                 LocalDate.parse("2026-06-01"),
                 LocalDate.parse("2026-06-02"),
                 LocalDateTime.now(),
@@ -204,7 +205,7 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.projectId").value(10))
                 .andExpect(jsonPath("$.title").value("Updated title"))
                 .andExpect(jsonPath("$.description").value("Updated description"))
-                .andExpect(jsonPath("$.status").value("DONE"))
+                .andExpect(jsonPath("$.taskStatus").value("DONE"))
                 .andExpect(jsonPath("$.priority").value("HIGH"));
 
         verify(taskService).updateTask(
