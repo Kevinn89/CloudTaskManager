@@ -61,8 +61,7 @@ void registerShouldReturnOkAndCallAuthService() throws Exception {
     RegisterRequest request = new RegisterRequest(
             "kevin@test.com",
             "Password123!",
-            "Kevin",
-            null
+            "Kevin"
     );
 
     AuthResponse serviceResponse = new AuthResponse(
