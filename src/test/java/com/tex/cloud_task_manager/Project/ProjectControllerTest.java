@@ -30,7 +30,8 @@ import com.tex.cloud_task_manager.Project.response_request.UpdateProjectRequest;
 import com.tex.cloud_task_manager.Project.service.ProjectService;
 import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 import com.tex.cloud_task_manager.Security.JwtService;
-import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.Project.ProjectPriority;
+import com.tex.cloud_task_manager.Task.TaskPriority;
 import com.tex.cloud_task_manager.Task.TaskStatus;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
 
@@ -70,7 +71,7 @@ class ProjectControllerTest {
                         "Build auth",
                         "JWT login and refresh token",
                         TaskStatus.TODO,
-                        Priority.LOW,
+                        TaskPriority.LOW,
                         LocalDate.parse("2026-05-14"),
                         null,
                         LocalDateTime.parse("2026-05-07T10:35:00"),
@@ -86,7 +87,7 @@ class ProjectControllerTest {
                 LocalDateTime.parse("2026-05-07T10:30:00"),
                 LocalDateTime.parse("2026-05-07T10:30:00"),
                 ProjectStatus.ACTIVE,
-                Priority.LOW,
+                ProjectPriority.LOW,
                 tasks
         );
 
@@ -129,7 +130,7 @@ class ProjectControllerTest {
                         "Build auth",
                         "JWT login and refresh token",
                         TaskStatus.TODO,
-                        Priority.LOW,
+                        TaskPriority.LOW,
                         LocalDate.parse("2026-05-14"),
                         null,
                         LocalDateTime.parse("2026-05-07T10:35:00"),
@@ -145,7 +146,7 @@ class ProjectControllerTest {
                         "Build homepage",
                         "Create portfolio homepage",
                         TaskStatus.IN_PROGRESS,
-                        Priority.LOW,
+                        TaskPriority.LOW,
                         LocalDate.parse("2026-05-21"),
                         null,
                         LocalDateTime.parse("2026-05-07T11:05:00"),
@@ -162,7 +163,7 @@ class ProjectControllerTest {
                         LocalDateTime.parse("2026-05-07T10:30:00"),
                         LocalDateTime.parse("2026-05-07T10:30:00"),
                         ProjectStatus.ACTIVE,
-                        Priority.LOW,
+                        ProjectPriority.LOW,
                         projectOneTasks
                 ),
                 new ProjectResponse(
@@ -173,7 +174,7 @@ class ProjectControllerTest {
                         LocalDateTime.parse("2026-05-07T11:00:00"),
                         LocalDateTime.parse("2026-05-07T11:00:00"),
                         ProjectStatus.ACTIVE,
-                        Priority.LOW,
+                        ProjectPriority.LOW,
                         projectTwoTasks
                 )
         );
@@ -224,7 +225,7 @@ class ProjectControllerTest {
                         "Build auth",
                         "JWT login and refresh token",
                         TaskStatus.TODO,
-                        Priority.LOW,
+                        TaskPriority.LOW,
                         LocalDate.parse("2026-05-14"),
                         null,
                         LocalDateTime.parse("2026-05-07T10:35:00"),
@@ -240,7 +241,7 @@ class ProjectControllerTest {
                 LocalDateTime.parse("2026-05-07T10:30:00"),
                 LocalDateTime.parse("2026-05-07T10:30:00"),
                 ProjectStatus.ACTIVE,
-                Priority.LOW,
+                ProjectPriority.LOW,
                 tasks
         );
 
@@ -284,7 +285,7 @@ class ProjectControllerTest {
                         "Build auth",
                         "JWT login and refresh token",
                         TaskStatus.TODO,
-                        Priority.LOW,
+                        TaskPriority.LOW,
                         LocalDate.parse("2026-05-14"),
                         null,
                         LocalDateTime.parse("2026-05-07T10:35:00"),
@@ -300,7 +301,7 @@ class ProjectControllerTest {
                 LocalDateTime.parse("2026-05-07T10:30:00"),
                 LocalDateTime.parse("2026-05-07T12:00:00"),
                 ProjectStatus.ACTIVE,
-                Priority.LOW,
+                ProjectPriority.LOW,
                 tasks
         );
 
@@ -373,7 +374,7 @@ class ProjectControllerTest {
                         "Build auth",
                         "JWT login and refresh token",
                         TaskStatus.ARCHIVED,
-                        Priority.LOW,
+                        TaskPriority.LOW,
                         LocalDate.parse("2026-05-14"),
                         null,
                         LocalDateTime.parse("2026-05-07T10:35:00"),
@@ -389,7 +390,7 @@ class ProjectControllerTest {
                 LocalDateTime.parse("2026-05-07T10:30:00"),
                 LocalDateTime.parse("2026-05-07T12:00:00"),
                 ProjectStatus.DELETED,
-                Priority.LOW,
+                ProjectPriority.LOW,
                 tasks
         );
 

@@ -3,17 +3,16 @@ package com.tex.cloud_task_manager.Project.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tex.cloud_task_manager.Project.ProjectEntity;
+import com.tex.cloud_task_manager.Project.ProjectPriority;
 import com.tex.cloud_task_manager.Project.ProjectRepository;
 import com.tex.cloud_task_manager.Project.ProjectStatus;
 import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
-import com.tex.cloud_task_manager.Task.Priority;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
 import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 
@@ -37,7 +36,7 @@ public class ProjectServiceImpl implements ProjectService {
         .description(description)
         .createdAt(LocalDateTime.now())
         .status(ProjectStatus.ACTIVE)
-        .priority(Priority.LOW)
+        .priority(ProjectPriority.LOW)
         .build());
 
         return ProjectResponse.from(project, project.getTasks().size(), project.getTasks().stream().map(TaskResponse::from).toList());

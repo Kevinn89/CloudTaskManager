@@ -116,7 +116,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
         assertThat(savedTask.getTitle()).isEqualTo("Create Task API");
         assertThat(savedTask.getDescription()).isEqualTo("Build task endpoint");
         assertThat(savedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
-        assertThat(savedTask.getPriority()).isEqualTo(Priority.LOW);
+        assertThat(savedTask.getPriority()).isEqualTo(TaskPriority.LOW);
         assertThat(savedTask.getCreatedAt()).isNotNull();
     }
 
@@ -424,7 +424,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                         .description(description)
                         .project(project)
                         .userId(userId)
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .createdAt(LocalDateTime.now())
                         .build()

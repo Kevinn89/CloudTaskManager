@@ -74,7 +74,7 @@ class TaskServiceImplTest {
                 .userId(userId)
                 .title("Create Task API")
                 .description("Build task endpoints")
-                .priority(Priority.LOW)
+                .priority(TaskPriority.LOW)
                 .taskStatus(TaskStatus.TODO)
                 .build();
 
@@ -90,7 +90,7 @@ class TaskServiceImplTest {
         assertEquals(projectId, response.projectId());
         assertEquals("Create Task API", response.title());
         assertEquals(TaskStatus.TODO, response.taskStatus());
-        assertEquals(Priority.LOW, response.priority());
+        assertEquals(TaskPriority.LOW, response.priority());
 
         ArgumentCaptor<TaskEntity> captor = ArgumentCaptor.forClass(TaskEntity.class);
         verify(taskRepository).save(captor.capture());
@@ -100,7 +100,7 @@ class TaskServiceImplTest {
         assertEquals(ownedProject, taskToSave.getProject());
         assertEquals(userId, taskToSave.getUserId());
         assertEquals(TaskStatus.TODO, taskToSave.getTaskStatus());
-        assertEquals(Priority.LOW, taskToSave.getPriority());
+        assertEquals(TaskPriority.LOW, taskToSave.getPriority());
         assertNotNull(taskToSave.getCreatedAt());
 
         verify(projectRepository).findByIdAndUserId(projectId, userId);
@@ -132,7 +132,7 @@ class TaskServiceImplTest {
                 .userId(userId)
                 .title("Task One")
                 .description("First task")
-                .priority(Priority.LOW)
+                .priority(TaskPriority.LOW)
                 .taskStatus(TaskStatus.TODO)
                 .build();
 
@@ -142,7 +142,7 @@ class TaskServiceImplTest {
                 .userId(userId)
                 .title("Task Two")
                 .description("Second task")
-                .priority(Priority.LOW)
+                .priority(TaskPriority.LOW)
                 .taskStatus(TaskStatus.IN_PROGRESS)
                 .build();
 
@@ -183,7 +183,7 @@ class TaskServiceImplTest {
                 .userId(userId)
                 .title("Old title")
                 .description("Old description")
-                .priority(Priority.LOW)
+                .priority(TaskPriority.LOW)
                 .taskStatus(TaskStatus.TODO)
                 .build();
 
@@ -278,7 +278,7 @@ class TaskServiceImplTest {
                 .userId(userId)
                 .title("Delete me")
                 .description("Delete this task")
-                .priority(Priority.LOW)
+                .priority(TaskPriority.LOW)
                 .taskStatus(TaskStatus.TODO)
                 .build();
 

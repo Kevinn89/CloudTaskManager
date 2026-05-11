@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.tex.cloud_task_manager.AbstractIntegrationTest;
 import com.tex.cloud_task_manager.Project.ProjectEntity;
+import com.tex.cloud_task_manager.Project.ProjectPriority;
 import com.tex.cloud_task_manager.Project.ProjectRepository;
 import com.tex.cloud_task_manager.Project.ProjectStatus;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
@@ -79,7 +80,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .description("Project owned by Kevin")
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(ProjectPriority.LOW)
                         .status(ProjectStatus.ACTIVE)
                         .build()
         );
@@ -91,7 +92,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .userId(owner.getId())
                         .status(ProjectStatus.ACTIVE)
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(ProjectPriority.LOW)
                         .build()
         );
 
@@ -102,7 +103,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .userId(otherUser.getId())
                         .status(ProjectStatus.ACTIVE)
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(ProjectPriority.LOW)
                         .build()
         );
     }
@@ -125,7 +126,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(savedTask.getUserId()).isEqualTo(owner.getId());
         assertThat(savedTask.getTitle()).isEqualTo("Create task service");
         assertThat(savedTask.getDescription()).isEqualTo("Implement task service logic");
-        assertThat(savedTask.getPriority()).isEqualTo(Priority.LOW);
+        assertThat(savedTask.getPriority()).isEqualTo(TaskPriority.LOW);
         assertThat(savedTask.getTaskStatus()).isEqualTo(TaskStatus.TODO);
         assertThat(savedTask.getCreatedAt()).isNotNull();
     }
@@ -160,7 +161,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                     //    .projectId(ownerProject.getId())
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .project(ownerProject)
                         .build()
@@ -173,7 +174,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                        // .projectId(secondOwnerProject.getId())
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .project(secondOwnerProject)
                         .build()
@@ -186,7 +187,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                        // .projectId(otherUserProject.getId())
                         .createdAt(LocalDateTime.now())
                         .userId(otherUser.getId())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .project(otherUserProject)
                         .build()
@@ -213,7 +214,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                      //   .projectId(otherUserProject.getId())
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -235,7 +236,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .userId(owner.getId())
                         .project(ownerProject)
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -275,7 +276,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .project(otherUserProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -314,7 +315,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .project(secondOwnerProject)
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -353,7 +354,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .project(otherUserProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -392,7 +393,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .project(ownerProject)
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -414,7 +415,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .project(otherUserProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -441,7 +442,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .project(secondOwnerProject)
                         .userId(owner.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );
@@ -467,7 +468,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                         .project(ownerProject)
                         .userId(otherUser.getId())
                         .createdAt(LocalDateTime.now())
-                        .priority(Priority.LOW)
+                        .priority(TaskPriority.LOW)
                         .taskStatus(TaskStatus.TODO)
                         .build()
         );

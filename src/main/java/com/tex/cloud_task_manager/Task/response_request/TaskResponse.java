@@ -3,7 +3,7 @@ package com.tex.cloud_task_manager.Task.response_request;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.Task.TaskPriority;
 import com.tex.cloud_task_manager.Task.TaskEntity;
 import com.tex.cloud_task_manager.Task.TaskStatus;
 
@@ -15,7 +15,7 @@ public record TaskResponse(
         String title,
         String description,
         TaskStatus taskStatus,
-        Priority priority,
+        TaskPriority priority,
         LocalDate dueDate,
         LocalDate completionDate,
         LocalDateTime createdAt,

@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.tex.cloud_task_manager.Project.ProjectEntity;
 import com.tex.cloud_task_manager.Project.ProjectStatus;
-import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.Project.ProjectPriority;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
 
 public record ProjectResponse(
@@ -16,7 +16,7 @@ public record ProjectResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         ProjectStatus status,
-        Priority priority,
+        ProjectPriority priority,
         List<TaskResponse> tasks
 ) {
 

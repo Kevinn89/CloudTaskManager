@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.Project.ProjectPriority;
 import com.tex.cloud_task_manager.Task.TaskEntity;
 
 import jakarta.persistence.Column;
@@ -48,7 +48,7 @@ public class ProjectEntity {
         private ProjectStatus status;
         @Column(name = "priority", nullable = false)
         @Builder.Default
-        private Priority priority = Priority.LOW;
+        private ProjectPriority priority = ProjectPriority.LOW;
         
         @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
         @Builder.Default

@@ -35,9 +35,6 @@ public class TaskEntity {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
 
-        // @Column(name = "project_id", nullable = false, insertable = false, updatable = false)
-        // private Long projectId;
-
         @ManyToOne(fetch = FetchType.LAZY, optional = false)
         @JoinColumn(name = "project_id", nullable = false)
         private ProjectEntity project;
@@ -61,6 +58,6 @@ public class TaskEntity {
         private LocalDate dueDate;
 
         @Column(name = "project_priority", nullable = true)
-        private Priority priority;
+        private TaskPriority priority;
 
 }

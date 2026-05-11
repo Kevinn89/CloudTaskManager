@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.tex.cloud_task_manager.Project.ProjectRepository;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
-import com.tex.cloud_task_manager.Task.Priority;
+import com.tex.cloud_task_manager.Task.TaskPriority;
 import com.tex.cloud_task_manager.Task.TaskEntity;
 import com.tex.cloud_task_manager.Task.TaskRepository;
 import com.tex.cloud_task_manager.Task.TaskStatus;
@@ -44,7 +44,7 @@ public class TaskServiceImpl implements TaskService {
         .project(project)
         .userId(userId)
         .description(description)
-        .priority(Priority.LOW)
+        .priority(TaskPriority.LOW)
         .taskStatus(TaskStatus.TODO)
         .createdAt(LocalDateTime.now())
         .build();
@@ -69,12 +69,19 @@ public class TaskServiceImpl implements TaskService {
 
         TaskEntity taskEntity = taskRepository.findByIdAndProjectIdAndUserId(taskId, project.getId(),project.getUserId()).orElseThrow(() -> new ResourceNotFoundException("Task not found for project " + projectId));
 
+        if(description != null)
         taskEntity.setDescription(description);
+        if(dueDate != null)
         taskEntity.setDueDate(LocalDate.parse(dueDate));
+        if(title != null)
         taskEntity.setTitle(title);
+        if(taskStatus != null)
         taskEntity.setTaskStatus(TaskStatus.valueOf(taskStatus));
+        if(completionDate != null)
         taskEntity.setCompletionDate(LocalDate.parse(completionDate));
-        taskEntity.setPriority(Priority.valueOf(priority));
+        if(priority != null)
+        taskEntity.setPriority(TaskPriority.valueOf(priority));
+        if(project != null)
         taskEntity.setProject(project);
 
       return TaskResponse.from(taskRepository.save(taskEntity));
