@@ -1,0 +1,8 @@
+blueocean
+configuration-as-code
+docker-workflow
+
+gradle
+junit
+pipeline-stage-view
+workflow-aggregator
