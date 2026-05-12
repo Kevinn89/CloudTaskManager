@@ -41,10 +41,6 @@ pipeline {
                 ]) {
                     sh '''
                         ./gradlew test
-
-                        // echo "Checking test report files..."
-                        // find . -path "*test-results*" -type f
-                        // find . -path "*build/reports/tests*" -type f
                     '''
                 }
             }
