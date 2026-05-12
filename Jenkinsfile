@@ -8,6 +8,8 @@ pipeline {
 
     environment {
         SPRING_PROFILES_ACTIVE = 'test'
+        DOCKER_REGISTRY = 'localhost:5001'
+        DOCKER_IMAGE = 'cloud-task-manager'
     }
 
     stages {
@@ -62,7 +64,32 @@ pipeline {
             }
             post {
                 always {
-                    junit testResults: 'build/test-results/**/*.xml', allowEmptyResults: false                }
+                    junit testResults: 'build/test-results/**/*.xml', allowEmptyResults: false
+                }
+            }
+        }
+
+        stage('Publish Docker Image') {
+            steps {
+                sh '''
+                    IMAGE_TAG="${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    LATEST_TAG="${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest"
+
+                    docker build -t "${IMAGE_TAG}" -t "${LATEST_TAG}" .
+                    docker push "${IMAGE_TAG}"
+                    docker push "${LATEST_TAG}"
+                '''
+            }
+        }
+
+        stage('Verify Registry Pull') {
+            steps {
+                sh '''
+                    IMAGE_TAG="${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${BUILD_NUMBER}"
+
+                    docker image rm "${IMAGE_TAG}" || true
+                    docker pull "${IMAGE_TAG}"
+                '''
             }
         }
     }
