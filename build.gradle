@@ -76,6 +76,11 @@ configurations {
 }
 
 tasks.register('integrationTest', Test) {
+
+	   testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
     description = 'Runs integration tests.'
     group = 'verification'
 
