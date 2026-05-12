@@ -34,7 +34,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Unit Tests') {
             steps {
                 withCredentials([
@@ -42,16 +41,19 @@ pipeline {
                 ]) {
                     sh '''
                         ./gradlew test
+
+                        echo "Checking test report files..."
+                        find . -path "*test-results*" -type f
+                        find . -path "*build/reports/tests*" -type f
                     '''
                 }
             }
             post {
                 always {
-                    junit 'build/test-results/test/*.xml'
+                    junit allowEmptyResults: true, testResults: '**/build/test-results/test/*.xml'
                 }
             }
         }
-
         stage('Integration Tests') {
             steps {
                 withCredentials([
