@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.tex.cloud_task_manager.Security.CurrentUserService;
+import com.tex.cloud_task_manager.User.response_request.UserResponse;
 import com.tex.cloud_task_manager.User.service.UserServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
@@ -22,6 +25,9 @@ class UserServiceImplTest {
 
     @Mock
     private UserEntityRepository userEntityRepository;
+
+    @Mock
+    private CurrentUserService currentUserService;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -122,5 +128,35 @@ class UserServiceImplTest {
         assertThat(result).isEmpty();
 
         verify(userEntityRepository).findAll();
+    }
+
+    @Test
+    void updateUserShouldUpdateCurrentUserAndSaveIt() {
+        // Arrange
+        UserEntity existingUser = UserEntity.builder()
+                .id(1L)
+                .name("Kevin")
+                .email("kevin@test.com")
+                .password("old-password")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(null)
+                .build();
+
+        when(currentUserService.getCurrentUserId()).thenReturn(1L);
+        when(userEntityRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userEntityRepository.save(existingUser)).thenReturn(existingUser);
+
+        // Act
+        UserResponse result = userService.updateUser("Kevin Updated", "new-password");
+
+        // Assert
+        assertThat(result.name()).isEqualTo("Kevin Updated");
+        assertThat(existingUser.getName()).isEqualTo("Kevin Updated");
+        assertThat(existingUser.getPassword()).isEqualTo("new-password");
+        assertThat(existingUser.getUpdatedAt()).isNotNull();
+
+        verify(currentUserService).getCurrentUserId();
+        verify(userEntityRepository).findById(1L);
+        verify(userEntityRepository).save(existingUser);
     }
 }

@@ -7,9 +7,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.User.response_request.UserResponse;
 import com.tex.cloud_task_manager.User.service.UserService;
 
 
@@ -63,6 +65,30 @@ class UserServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(users)
                 .extracting(UserEntity::getEmail)
                 .containsExactlyInAnyOrder("kevin@test.com", "alex@test.com");
+    }
+
+    @Test
+    @WithMockUser(username = "kevin@test.com")
+    void updateUserShouldPersistChangesForCurrentUser() {
+        // Arrange
+        UserEntity createdUser = userService.createUser(
+                "Kevin",
+                "kevin@test.com",
+                "old-password"
+        );
+
+        // Act
+        UserResponse response = userService.updateUser("Kevin Updated", "new-password");
+
+        // Assert
+        assertThat(response.name()).isEqualTo("Kevin Updated");
+
+        UserEntity updatedUser = userEntityRepository.findById(createdUser.getId())
+                .orElseThrow();
+
+        assertThat(updatedUser.getName()).isEqualTo("Kevin Updated");
+        assertThat(updatedUser.getPassword()).isEqualTo("new-password");
+        assertThat(updatedUser.getUpdatedAt()).isNotNull();
     }
 
 }
