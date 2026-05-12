@@ -3,6 +3,7 @@ package com.tex.cloud_task_manager.User;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 import com.tex.cloud_task_manager.Security.JwtService;
+import com.tex.cloud_task_manager.User.response_request.UserResponse;
 import com.tex.cloud_task_manager.User.service.UserService;
 
 @WebMvcTest(UserController.class)
@@ -41,6 +43,31 @@ class UserControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @Test
+    void updateUserShouldReturnUpdatedUserResponse() throws Exception {
+        // Arrange
+        when(userService.updateUser("Kevin Updated", "NewPassword123!"))
+                .thenReturn(new UserResponse("Kevin Updated"));
+
+        String requestBody = """
+                {
+                  "name": "Kevin Updated",
+                  "password": "NewPassword123!"
+                }
+                """;
+
+        // Act + Assert
+        mockMvc.perform(put("/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.name").value("Kevin Updated"));
+
+        verify(userService).updateUser("Kevin Updated", "NewPassword123!");
+    }
 
     @Test
     void getUsersShouldReturnAllUsers() throws Exception {
