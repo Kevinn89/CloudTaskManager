@@ -5,8 +5,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.tex.cloud_task_manager.Security.CurrentUserService;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.User.response_request.UserResponse;
+import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -15,6 +18,9 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
 
     private final UserEntityRepository userEntityRepository;
+
+
+    private final CurrentUserService currentUserService;
 
     @Override
     public UserEntity createUser(String name, String email, String password) {
@@ -32,5 +38,30 @@ public class UserServiceImpl implements UserService {
     public List<UserEntity> getAllUsers() {
        return userEntityRepository.findAll();
     }
+
+
+    @Override
+    public UserResponse updateUser(String name, String password) {
+
+        long userId = getCurrentUserId();
+
+        UserEntity userEntity = userEntityRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found for id "+ userId));
+
+        if(name != null && !name.isBlank()) {
+            userEntity.setName(name);
+        }
+
+        if(password != null && !password.isBlank()) {
+            userEntity.setPassword(password);
+        }
+
+        userEntity.setUpdatedAt(LocalDateTime.now());
+
+        return UserResponse.from(userEntityRepository.save(userEntity)); 
+   }
+
+        private long getCurrentUserId() {
+            return currentUserService.getCurrentUserId();
+        }
     
 }
