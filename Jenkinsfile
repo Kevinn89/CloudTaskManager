@@ -40,7 +40,8 @@ pipeline {
                     string(credentialsId: 'cloud-task-manager-jwt-secret', variable: 'JWT_SECRET')
                 ]) {
                     sh '''
-                            sh './gradlew clean test'
+                        ./gradlew test
+
                         // echo "Checking test report files..."
                         // find . -path "*test-results*" -type f
                         // find . -path "*build/reports/tests*" -type f
@@ -58,13 +59,14 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'cloud-task-manager-jwt-secret', variable: 'JWT_SECRET')
                 ]) {
-                    sh './gradlew clean test integrationTest'
+                    sh '''
+                        ./gradlew integrationTest
+                    '''
                 }
             }
             post {
                 always {
-                     sh 'find build/test-results -name "*.xml" -type f -print'
-                     junit testResults: 'build/test-results/**/*.xml', allowEmptyResults: false               }
+                    junit testResults: 'build/test-results/**/*.xml', allowEmptyResults: false                }
             }
         }
     }
