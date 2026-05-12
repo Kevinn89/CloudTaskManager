@@ -40,17 +40,16 @@ pipeline {
                     string(credentialsId: 'cloud-task-manager-jwt-secret', variable: 'JWT_SECRET')
                 ]) {
                     sh '''
-                        ./gradlew test
-
-                        echo "Checking test report files..."
-                        find . -path "*test-results*" -type f
-                        find . -path "*build/reports/tests*" -type f
+                            sh './gradlew clean test'
+                        // echo "Checking test report files..."
+                        // find . -path "*test-results*" -type f
+                        // find . -path "*build/reports/tests*" -type f
                     '''
                 }
             }
             post {
                 always {
-                    junit allowEmptyResults: true, testResults: '**/build/test-results/test/*.xml'
+                    junit allowEmptyResults: false, testResults: '**/build/test-results/test/*.xml'
                 }
             }
         }
@@ -59,15 +58,13 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'cloud-task-manager-jwt-secret', variable: 'JWT_SECRET')
                 ]) {
-                    sh '''
-                        ./gradlew integrationTest
-                    '''
+                    sh './gradlew clean test integrationTest'
                 }
             }
             post {
                 always {
-                    junit 'build/test-results/integrationTest/*.xml'
-                }
+                     sh 'find build/test-results -name "*.xml" -type f -print'
+                     junit testResults: 'build/test-results/**/*.xml', allowEmptyResults: false               }
             }
         }
     }
