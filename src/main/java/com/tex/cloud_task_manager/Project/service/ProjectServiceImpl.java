@@ -57,7 +57,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     return projectRepository
         .findByUserId(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("No Projects found for user " + userId))
+        .orElseThrow(
+            () -> new ResourceNotFoundException("No Projects found for user %d".formatted(userId)))
         .stream()
         .map(
             project -> {
@@ -88,7 +89,9 @@ public class ProjectServiceImpl implements ProjectService {
                   project.getTasks().stream().map(TaskResponse::from).toList());
             })
         .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
   }
 
   @Override
@@ -114,7 +117,9 @@ public class ProjectServiceImpl implements ProjectService {
                   project.getTasks().stream().map(TaskResponse::from).toList());
             })
         .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
   }
 
   @Override
@@ -133,7 +138,9 @@ public class ProjectServiceImpl implements ProjectService {
                   project, count, project.getTasks().stream().map(TaskResponse::from).toList());
             })
         .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
   }
 
   @Override
@@ -152,10 +159,8 @@ public class ProjectServiceImpl implements ProjectService {
                         if (task.getCompletionDate() == null
                             || !task.getTaskStatus().equals(TaskStatus.DONE)) {
                           throw new BadRequestException(
-                              "Incomplete Task title "
-                                  + task.getTitle()
-                                  + " currently "
-                                  + task.getTaskStatus());
+                              "Incomplete Task title %s currently %s"
+                                  .formatted(task.getTitle(), task.getTaskStatus()));
                         }
                       });
 
@@ -166,6 +171,8 @@ public class ProjectServiceImpl implements ProjectService {
               return ProjectResponse.from(project, 0, null);
             })
         .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
   }
 }

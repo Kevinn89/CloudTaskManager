@@ -127,7 +127,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
         .andExpect(status().isNotFound())
         .andExpect(
             jsonPath("$.message")
-                .value("Project not found for projectId " + otherUserProject.getId()));
+                .value("Project not found for projectId %d".formatted(otherUserProject.getId())));
 
     assertThat(taskRepository.findAll()).isEmpty();
   }
@@ -182,7 +182,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
         .andExpect(status().isNotFound())
         .andExpect(
             jsonPath("$.message")
-                .value("Project not found for projectId " + otherUserProject.getId()));
+                .value("Project not found for projectId %d".formatted(otherUserProject.getId())));
   }
 
   @Test
@@ -300,7 +300,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                         .formatted(taskInSecondProject.getId(), ownerProject.getId())))
         .andExpect(status().isNotFound())
         .andExpect(
-            jsonPath("$.message").value("Task not found for project " + ownerProject.getId()));
+            jsonPath("$.message")
+                .value("Task not found for project %d".formatted(ownerProject.getId())));
 
     TaskEntity unchangedTask = taskRepository.findById(taskInSecondProject.getId()).orElseThrow();
 
@@ -340,7 +341,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
         .andExpect(status().isNotFound())
         .andExpect(
             jsonPath("$.message")
-                .value("Project not found for projectId " + otherUserProject.getId()));
+                .value("Project not found for projectId %d".formatted(otherUserProject.getId())));
 
     TaskEntity unchangedTask = taskRepository.findById(otherUserTask.getId()).orElseThrow();
 
@@ -389,7 +390,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                 .header("Authorization", "Bearer " + token))
         .andExpect(status().isNotFound())
         .andExpect(
-            jsonPath("$.message").value("Task not found for project " + ownerProject.getId()));
+            jsonPath("$.message")
+                .value("Task not found for project %d".formatted(ownerProject.getId())));
 
     assertThat(taskRepository.findById(taskInSecondProject.getId())).isPresent();
   }
