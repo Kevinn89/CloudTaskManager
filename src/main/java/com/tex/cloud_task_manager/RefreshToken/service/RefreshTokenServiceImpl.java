@@ -55,7 +55,9 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     var userOptional =
         userEntityRepository
             .findByEmail(email)
-            .orElseThrow(() -> new UnauthorizedException("User not found for this email " + email));
+            .orElseThrow(
+                () ->
+                    new UnauthorizedException("User not found for this email %s".formatted(email)));
 
     String rawToken = generateSecureRandomToken();
 

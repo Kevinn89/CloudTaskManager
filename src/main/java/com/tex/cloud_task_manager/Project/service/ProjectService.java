@@ -14,4 +14,6 @@ public interface ProjectService {
   ProjectResponse updateProject(long projectId, String name, String description);
 
   ProjectResponse getProject(long projectId);
+
+  ProjectResponse completeProject(long projectId);
 }

@@ -394,6 +394,36 @@ class ProjectControllerTest {
   }
 
   @Test
+  void completeProjectShouldReturnOkAndCallProjectService() throws Exception {
+    ProjectResponse serviceResponse =
+        new ProjectResponse(
+            1L,
+            "Cloud Task Manager",
+            "Backend task app",
+            0,
+            LocalDateTime.parse("2026-05-07T10:30:00"),
+            LocalDateTime.parse("2026-05-13T09:00:00"),
+            ProjectStatus.COMPLETED,
+            ProjectPriority.LOW,
+            null);
+
+    when(projectService.completeProject(1L)).thenReturn(serviceResponse);
+
+    mockMvc
+        .perform(put("/api/project/{projectId}/complete", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(1))
+        .andExpect(jsonPath("$.name").value("Cloud Task Manager"))
+        .andExpect(jsonPath("$.description").value("Backend task app"))
+        .andExpect(jsonPath("$.taskCount").value(0))
+        .andExpect(jsonPath("$.status").value("COMPLETED"))
+        .andExpect(jsonPath("$.priority").value("LOW"))
+        .andExpect(jsonPath("$.updatedAt").value("2026-05-13T09:00:00"));
+
+    verify(projectService).completeProject(1L);
+  }
+
+  @Test
   void createProjectShouldReturnBadRequestWhenRequestBodyIsInvalid() throws Exception {
     String invalidJson =
         """

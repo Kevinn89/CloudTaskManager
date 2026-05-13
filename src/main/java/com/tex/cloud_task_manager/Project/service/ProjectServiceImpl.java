@@ -6,7 +6,9 @@ import com.tex.cloud_task_manager.Project.ProjectRepository;
 import com.tex.cloud_task_manager.Project.ProjectStatus;
 import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
+import com.tex.cloud_task_manager.Task.TaskStatus;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
+import com.tex.cloud_task_manager.common.exception.BadRequestException;
 import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,7 +57,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     return projectRepository
         .findByUserId(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("No Projects found for user " + userId))
+        .orElseThrow(
+            () -> new ResourceNotFoundException("No Projects found for user %d".formatted(userId)))
         .stream()
         .map(
             project -> {
@@ -86,7 +89,9 @@ public class ProjectServiceImpl implements ProjectService {
                   project.getTasks().stream().map(TaskResponse::from).toList());
             })
         .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
   }
 
   @Override
@@ -112,7 +117,9 @@ public class ProjectServiceImpl implements ProjectService {
                   project.getTasks().stream().map(TaskResponse::from).toList());
             })
         .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
   }
 
   @Override
@@ -131,6 +138,41 @@ public class ProjectServiceImpl implements ProjectService {
                   project, count, project.getTasks().stream().map(TaskResponse::from).toList());
             })
         .orElseThrow(
-            () -> new ResourceNotFoundException("Project not found with id: " + projectId));
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
+  }
+
+  @Override
+  @Transactional
+  public ProjectResponse completeProject(long projectId) {
+
+    long userId = currentUserService.getCurrentUserId();
+
+    return projectRepository
+        .findByIdAndUserId(projectId, userId)
+        .map(
+            project -> {
+              project.getTasks().stream()
+                  .forEach(
+                      task -> {
+                        if (task.getCompletionDate() == null
+                            || !task.getTaskStatus().equals(TaskStatus.DONE)) {
+                          throw new BadRequestException(
+                              "Incomplete Task title %s currently %s"
+                                  .formatted(task.getTitle(), task.getTaskStatus()));
+                        }
+                      });
+
+              project.setStatus(ProjectStatus.COMPLETED);
+              project.setPriority(ProjectPriority.LOW);
+              project.setUpdatedAt(LocalDateTime.now());
+
+              return ProjectResponse.from(project, 0, null);
+            })
+        .orElseThrow(
+            () ->
+                new ResourceNotFoundException(
+                    "Project not found with id: %d".formatted(projectId)));
   }
 }

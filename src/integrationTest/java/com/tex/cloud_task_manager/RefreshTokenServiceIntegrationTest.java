@@ -69,7 +69,7 @@ class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
     String email = "missing@test.com";
     assertThatThrownBy(() -> refreshTokenService.generateRefreshToken(email))
         .isInstanceOf(UnauthorizedException.class)
-        .hasMessageContaining("User not found for this email " + email);
+        .hasMessageContaining("User not found for this email %s".formatted(email));
 
     assertThat(refreshTokenRepository.findAll()).isEmpty();
   }

@@ -188,7 +188,7 @@ class TaskServiceImplTest {
             projectId,
             "Updated title",
             "Updated description",
-            "DONE",
+            "IN_PROGRESS",
             "2026-06-01",
             "2026-06-02",
             "LOW");
@@ -197,12 +197,108 @@ class TaskServiceImplTest {
     assertEquals(projectId, response.projectId());
     assertEquals("Updated title", response.title());
     assertEquals("Updated description", response.description());
-    assertEquals(TaskStatus.DONE, response.taskStatus());
+    assertEquals(TaskStatus.IN_PROGRESS, response.taskStatus());
     assertEquals(LocalDate.parse("2026-06-01"), response.dueDate());
     assertEquals(LocalDate.parse("2026-06-02"), response.completionDate());
 
     verify(taskRepository).findByIdAndProjectIdAndUserId(taskId, projectId, userId);
     verify(taskRepository).save(existingTask);
+  }
+
+  @Test
+  void updateTaskShouldSetCompletionDateWhenMovingFromInProgressToDone() {
+    when(currentUserService.getCurrentUserId()).thenReturn(userId);
+    when(projectRepository.findByIdAndUserId(projectId, userId))
+        .thenReturn(Optional.of(ownedProject));
+
+    TaskEntity existingTask =
+        TaskEntity.builder()
+            .id(taskId)
+            .project(ownedProject)
+            .userId(userId)
+            .title("Finish me")
+            .description("Move to done")
+            .priority(TaskPriority.LOW)
+            .taskStatus(TaskStatus.IN_PROGRESS)
+            .build();
+
+    when(taskRepository.findByIdAndProjectIdAndUserId(taskId, projectId, userId))
+        .thenReturn(Optional.of(existingTask));
+    when(taskRepository.save(any(TaskEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    TaskResponse response =
+        taskService.updateTask(taskId, projectId, null, null, "DONE", null, null, null);
+
+    assertEquals(TaskStatus.DONE, response.taskStatus());
+    assertNotNull(response.completionDate());
+    assertEquals(TaskStatus.DONE, existingTask.getTaskStatus());
+    assertNotNull(existingTask.getCompletionDate());
+
+    verify(taskRepository).save(existingTask);
+  }
+
+  @Test
+  void updateTaskShouldClearCompletionDateWhenMovingFromDoneToInProgress() {
+    when(currentUserService.getCurrentUserId()).thenReturn(userId);
+    when(projectRepository.findByIdAndUserId(projectId, userId))
+        .thenReturn(Optional.of(ownedProject));
+
+    TaskEntity existingTask =
+        TaskEntity.builder()
+            .id(taskId)
+            .project(ownedProject)
+            .userId(userId)
+            .title("Reopen me")
+            .description("Move back")
+            .priority(TaskPriority.LOW)
+            .taskStatus(TaskStatus.DONE)
+            .completionDate(LocalDate.of(2026, 5, 13))
+            .build();
+
+    when(taskRepository.findByIdAndProjectIdAndUserId(taskId, projectId, userId))
+        .thenReturn(Optional.of(existingTask));
+    when(taskRepository.save(any(TaskEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    TaskResponse response =
+        taskService.updateTask(taskId, projectId, null, null, "IN_PROGRESS", null, null, null);
+
+    assertEquals(TaskStatus.IN_PROGRESS, response.taskStatus());
+    assertEquals(null, response.completionDate());
+    assertEquals(TaskStatus.IN_PROGRESS, existingTask.getTaskStatus());
+    assertEquals(null, existingTask.getCompletionDate());
+
+    verify(taskRepository).save(existingTask);
+  }
+
+  @Test
+  void updateTaskShouldRejectUnchangedStatus() {
+    when(currentUserService.getCurrentUserId()).thenReturn(userId);
+    when(projectRepository.findByIdAndUserId(projectId, userId))
+        .thenReturn(Optional.of(ownedProject));
+
+    TaskEntity existingTask =
+        TaskEntity.builder()
+            .id(taskId)
+            .project(ownedProject)
+            .userId(userId)
+            .title("Already todo")
+            .description("No status change")
+            .priority(TaskPriority.LOW)
+            .taskStatus(TaskStatus.TODO)
+            .build();
+
+    when(taskRepository.findByIdAndProjectIdAndUserId(taskId, projectId, userId))
+        .thenReturn(Optional.of(existingTask));
+
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class,
+            () -> taskService.updateTask(taskId, projectId, null, null, "TODO", null, null, null));
+
+    assertEquals("TaskStatus unchanged", exception.getMessage());
+    verify(taskRepository, never()).save(any());
   }
 
   @Test

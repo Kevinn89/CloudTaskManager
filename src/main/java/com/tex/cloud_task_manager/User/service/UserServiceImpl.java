@@ -44,7 +44,8 @@ public class UserServiceImpl implements UserService {
     UserEntity userEntity =
         userEntityRepository
             .findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found for id " + userId));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("User not found for id %d".formatted(userId)));
 
     if (name != null && !name.isBlank()) userEntity.setName(name);
 

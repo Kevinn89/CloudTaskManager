@@ -7,6 +7,8 @@ import com.tex.cloud_task_manager.Task.TaskPriority;
 import com.tex.cloud_task_manager.Task.TaskRepository;
 import com.tex.cloud_task_manager.Task.TaskStatus;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
+import com.tex.cloud_task_manager.common.exception.BadRequestException;
+import com.tex.cloud_task_manager.common.exception.ConflictException;
 import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 import java.time.LocalDate;
@@ -38,7 +40,8 @@ public class TaskServiceImpl implements TaskService {
             .findByIdAndUserId(projectId, userId)
             .orElseThrow(
                 () ->
-                    new ResourceNotFoundException("Project not found for projectId " + projectId));
+                    new ResourceNotFoundException(
+                        "Project not found for projectId %d".formatted(projectId)));
 
     TaskEntity taskEntity =
         TaskEntity.builder()
@@ -62,7 +65,8 @@ public class TaskServiceImpl implements TaskService {
             .findByIdAndUserId(projectId, getCurrentUserId())
             .orElseThrow(
                 () ->
-                    new ResourceNotFoundException("Project not found for projectId " + projectId));
+                    new ResourceNotFoundException(
+                        "Project not found for projectId %d".formatted(projectId)));
 
     List<TaskEntity> taskEntity =
         taskRepository.findByProjectIdAndUserId(projectId, project.getUserId());
@@ -86,19 +90,22 @@ public class TaskServiceImpl implements TaskService {
             .findByIdAndUserId(projectId, getCurrentUserId())
             .orElseThrow(
                 () ->
-                    new ResourceNotFoundException("Project not found for projectId " + projectId));
+                    new ResourceNotFoundException(
+                        "Project not found for projectId %d".formatted(projectId)));
 
     TaskEntity taskEntity =
         taskRepository
             .findByIdAndProjectIdAndUserId(taskId, project.getId(), project.getUserId())
             .orElseThrow(
-                () -> new ResourceNotFoundException("Task not found for project " + projectId));
+                () ->
+                    new ResourceNotFoundException(
+                        "Task not found for project %d".formatted(projectId)));
 
     if (description != null && !description.isBlank()) taskEntity.setDescription(description);
     if (dueDate != null && !dueDate.isBlank()) taskEntity.setDueDate(LocalDate.parse(dueDate));
     if (title != null && !title.isBlank()) taskEntity.setTitle(title);
     if (taskStatus != null && !taskStatus.isBlank())
-      taskEntity.setTaskStatus(TaskStatus.valueOf(taskStatus));
+      taskEntity = updateStatus(taskEntity, TaskStatus.valueOf(taskStatus));
     if (completionDate != null && !completionDate.isBlank())
       taskEntity.setCompletionDate(LocalDate.parse(completionDate));
     if (priority != null && !priority.isBlank())
@@ -106,6 +113,36 @@ public class TaskServiceImpl implements TaskService {
     if (project != null) taskEntity.setProject(project);
 
     return TaskResponse.from(taskRepository.save(taskEntity));
+  }
+
+  private TaskEntity updateStatus(TaskEntity curreStatus, TaskStatus toStatus) {
+
+    TaskStatus status = curreStatus.getTaskStatus();
+
+    if (status.equals(toStatus)) throw new ConflictException("TaskStatus unchanged");
+
+    switch (status) {
+      case TaskStatus.TODO:
+        if (TaskStatus.IN_PROGRESS.equals(toStatus)) status = toStatus;
+        else {
+          throw new BadRequestException(
+              "Unable to move to %s from %s".formatted(TaskStatus.IN_PROGRESS, status));
+        }
+        break;
+      case TaskStatus.IN_PROGRESS:
+        if (TaskStatus.DONE.equals(toStatus)) curreStatus.setCompletionDate(LocalDate.now());
+        status = toStatus;
+        if (TaskStatus.TODO.equals(toStatus)) status = toStatus;
+      case TaskStatus.DONE:
+        if (TaskStatus.IN_PROGRESS.equals(toStatus)) curreStatus.setCompletionDate(null);
+        status = toStatus;
+        if (TaskStatus.TODO.equals(toStatus)) curreStatus.setCompletionDate(null);
+        status = toStatus;
+      default:
+        break;
+    }
+    curreStatus.setTaskStatus(status);
+    return curreStatus;
   }
 
   @Override
@@ -120,7 +157,9 @@ public class TaskServiceImpl implements TaskService {
         taskRepository
             .findByIdAndProjectIdAndUserId(taskId, project.getId(), project.getUserId())
             .orElseThrow(
-                () -> new ResourceNotFoundException("Task not found for project " + projectId));
+                () ->
+                    new ResourceNotFoundException(
+                        "Task not found for project %d".formatted(projectId)));
 
     taskRepository.delete(taskEntity);
   }

@@ -135,7 +135,9 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
         assertThrows(
             RuntimeException.class, () -> projectService.getProject(otherUsersProject.getId()));
 
-    assertEquals("Project not found with id: " + otherUsersProject.getId(), exception.getMessage());
+    assertEquals(
+        "Project not found with id: %d".formatted(otherUsersProject.getId()),
+        exception.getMessage());
   }
 
   @Test
@@ -186,7 +188,9 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
                 projectService.updateProject(
                     otherUsersProject.getId(), "Hacked Name", "Hacked Description"));
 
-    assertEquals("Project not found with id: " + otherUsersProject.getId(), exception.getMessage());
+    assertEquals(
+        "Project not found with id: %d".formatted(otherUsersProject.getId()),
+        exception.getMessage());
 
     ProjectEntity unchangedProject =
         projectRepository.findById(otherUsersProject.getId()).orElseThrow();
@@ -233,7 +237,9 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
         assertThrows(
             RuntimeException.class, () -> projectService.deleteProject(otherUsersProject.getId()));
 
-    assertEquals("Project not found with id: " + otherUsersProject.getId(), exception.getMessage());
+    assertEquals(
+        "Project not found with id: %d".formatted(otherUsersProject.getId()),
+        exception.getMessage());
 
     assertTrue(projectRepository.findById(otherUsersProject.getId()).isPresent());
   }
