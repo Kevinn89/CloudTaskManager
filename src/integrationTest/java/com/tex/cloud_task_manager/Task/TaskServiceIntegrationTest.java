@@ -222,7 +222,7 @@ class TaskServiceIntegrationTest extends AbstractIntegrationTest {
                 .project(ownerProject)
                 .createdAt(LocalDateTime.now())
                 .priority(TaskPriority.LOW)
-                .taskStatus(TaskStatus.TODO)
+                .taskStatus(TaskStatus.IN_PROGRESS)
                 .build());
 
     TaskResponse response =

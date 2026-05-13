@@ -228,6 +228,46 @@ class TaskControllerTest {
   }
 
   @Test
+  void updateTaskShouldReturnDoneWithCompletionDateWhenServiceCompletesTask() throws Exception {
+    TaskResponse response =
+        new TaskResponse(
+            50L,
+            10L,
+            null,
+            "Finish task",
+            "Complete task through controller",
+            TaskStatus.DONE,
+            TaskPriority.LOW,
+            null,
+            LocalDate.parse("2026-05-13"),
+            LocalDateTime.now(),
+            null);
+
+    when(taskService.updateTask(50L, 10L, null, null, "DONE", null, null, null))
+        .thenReturn(response);
+
+    mockMvc
+        .perform(
+            put("/api/task/update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                                {
+                                  "id": 50,
+                                  "projectId": 10,
+                                  "taskStatus": "DONE"
+                                }
+                                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(50))
+        .andExpect(jsonPath("$.projectId").value(10))
+        .andExpect(jsonPath("$.taskStatus").value("DONE"))
+        .andExpect(jsonPath("$.completionDate").value("2026-05-13"));
+
+    verify(taskService).updateTask(50L, 10L, null, null, "DONE", null, null, null);
+  }
+
+  @Test
   void updateTaskShouldReturnNotFoundWhenTaskIsNotScopedToProjectAndUser() throws Exception {
     // Why: proves controller returns service failure when taskId + projectId + userId does not
     // match.

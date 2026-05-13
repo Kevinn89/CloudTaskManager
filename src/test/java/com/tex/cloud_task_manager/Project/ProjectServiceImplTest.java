@@ -11,7 +11,11 @@ import static org.mockito.Mockito.when;
 import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Project.service.ProjectServiceImpl;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
+import com.tex.cloud_task_manager.Task.TaskEntity;
+import com.tex.cloud_task_manager.Task.TaskStatus;
+import com.tex.cloud_task_manager.common.exception.BadRequestException;
 import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -251,5 +255,56 @@ class ProjectServiceImplTest {
     verify(projectRepository).findByIdAndUserId(1L, 20L);
     verify(projectRepository, never()).delete(any());
     verify(projectRepository, never()).findById(any());
+  }
+
+  @Test
+  void completeProjectShouldSetCompletedWhenAllTasksAreDoneWithCompletionDates() {
+    TaskEntity completedTask =
+        TaskEntity.builder()
+            .id(1L)
+            .title("Completed task")
+            .taskStatus(TaskStatus.DONE)
+            .completionDate(LocalDate.of(2026, 5, 13))
+            .build();
+
+    project.setTasks(List.of(completedTask));
+
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(projectRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(project));
+
+    ProjectResponse response = projectService.completeProject(1L);
+
+    assertEquals(ProjectStatus.COMPLETED, response.status());
+    assertEquals(ProjectPriority.LOW, response.priority());
+    assertEquals(ProjectStatus.COMPLETED, project.getStatus());
+    assertEquals(ProjectPriority.LOW, project.getPriority());
+    assertNotNull(project.getUpdatedAt());
+
+    verify(projectRepository).findByIdAndUserId(1L, 10L);
+  }
+
+  @Test
+  void completeProjectShouldThrowWhenAnyTaskIsIncomplete() {
+    TaskEntity incompleteTask =
+        TaskEntity.builder()
+            .id(1L)
+            .title("Incomplete task")
+            .taskStatus(TaskStatus.IN_PROGRESS)
+            .completionDate(null)
+            .build();
+
+    project.setTasks(List.of(incompleteTask));
+
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(projectRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(project));
+
+    BadRequestException exception =
+        assertThrows(BadRequestException.class, () -> projectService.completeProject(1L));
+
+    assertEquals(
+        "Incomplete Task title Incomplete task currently IN_PROGRESS", exception.getMessage());
+    assertEquals(ProjectStatus.ACTIVE, project.getStatus());
+
+    verify(projectRepository).findByIdAndUserId(1L, 10L);
   }
 }

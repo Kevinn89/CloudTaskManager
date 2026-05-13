@@ -54,32 +54,8 @@ public class ProjectController {
     return ResponseEntity.ok(projectService.getUserProjects());
   }
 
-  // public ResponseEntity<?> getProjectTasks(@PathVariable long projectId) {
-  //     return ResponseEntity.ok(projectService.get);
-  // }
-
-  // public ResponseEntity<?> addTaskToProject() {
-  //     return ResponseEntity.ok("Task added to project successfully");
-  // }
-
-  // public ResponseEntity<?> removeTaskFromProject() {
-  //     return ResponseEntity.ok("Task removed from project successfully");
-  // }
-
-  // public ResponseEntity<?> getProjectMembers() {
-  //     return ResponseEntity.ok("List of project members");
-  // }
-
-  // public ResponseEntity<?> addMemberToProject() {
-  //     return ResponseEntity.ok("Member added to project successfully");
-  // }
-
-  // public ResponseEntity<?> removeMemberFromProject() {
-  //     return ResponseEntity.ok("Member removed from project successfully");
-  // }
-
-  // public ResponseEntity<?> getProjectActivity() {
-  //     return ResponseEntity.ok("Project activity log");
-  // }
-
+  @PutMapping("/{projectId}/complete")
+  public ResponseEntity<ProjectResponse> complete(@PathVariable long projectId) {
+    return ResponseEntity.ok(projectService.completeProject(projectId));
+  }
 }

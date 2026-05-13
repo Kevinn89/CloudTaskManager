@@ -7,6 +7,7 @@ import com.tex.cloud_task_manager.Task.TaskPriority;
 import com.tex.cloud_task_manager.Task.TaskRepository;
 import com.tex.cloud_task_manager.Task.TaskStatus;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
+import com.tex.cloud_task_manager.common.exception.ConflictException;
 import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 import java.time.LocalDate;
@@ -98,7 +99,7 @@ public class TaskServiceImpl implements TaskService {
     if (dueDate != null && !dueDate.isBlank()) taskEntity.setDueDate(LocalDate.parse(dueDate));
     if (title != null && !title.isBlank()) taskEntity.setTitle(title);
     if (taskStatus != null && !taskStatus.isBlank())
-      taskEntity.setTaskStatus(TaskStatus.valueOf(taskStatus));
+      taskEntity = updateStatus(taskEntity, TaskStatus.valueOf(taskStatus));
     if (completionDate != null && !completionDate.isBlank())
       taskEntity.setCompletionDate(LocalDate.parse(completionDate));
     if (priority != null && !priority.isBlank())
@@ -106,6 +107,36 @@ public class TaskServiceImpl implements TaskService {
     if (project != null) taskEntity.setProject(project);
 
     return TaskResponse.from(taskRepository.save(taskEntity));
+  }
+
+  private TaskEntity updateStatus(TaskEntity curreStatus, TaskStatus toStatus) {
+
+    TaskStatus status = null;
+
+    if (curreStatus.getTaskStatus().equals(toStatus))
+      throw new ConflictException("TaskStatus unchanged");
+
+    switch (curreStatus.getTaskStatus()) {
+      case TaskStatus.TODO:
+        if (TaskStatus.IN_PROGRESS.equals(toStatus)) status = toStatus;
+        else {
+          throw new RuntimeException("Can only move to " + TaskStatus.IN_PROGRESS);
+        }
+        break;
+      case TaskStatus.IN_PROGRESS:
+        if (TaskStatus.DONE.equals(toStatus)) curreStatus.setCompletionDate(LocalDate.now());
+        status = toStatus;
+        if (TaskStatus.TODO.equals(toStatus)) status = toStatus;
+      case TaskStatus.DONE:
+        if (TaskStatus.IN_PROGRESS.equals(toStatus)) curreStatus.setCompletionDate(null);
+        status = toStatus;
+        if (TaskStatus.TODO.equals(toStatus)) curreStatus.setCompletionDate(null);
+        status = toStatus;
+      default:
+        break;
+    }
+    curreStatus.setTaskStatus(status);
+    return curreStatus;
   }
 
   @Override

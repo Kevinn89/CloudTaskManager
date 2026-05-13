@@ -193,6 +193,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
 
     TaskEntity task =
         createTask("Old title", "Old description", ownerProject.getId(), owner.getId());
+    task.setTaskStatus(TaskStatus.IN_PROGRESS);
+    taskRepository.save(task);
 
     mockMvc
         .perform(
@@ -227,6 +229,40 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     assertThat(updatedTask.getTaskStatus()).isEqualTo(TaskStatus.DONE);
     assertThat(updatedTask.getDueDate()).isEqualTo(LocalDate.parse("2026-06-01"));
     assertThat(updatedTask.getCompletionDate()).isEqualTo(LocalDate.parse("2026-06-02"));
+  }
+
+  @Test
+  void updateShouldSetCompletionDateWhenMovingInProgressTaskToDone() throws Exception {
+    String token = loginAndExtractAccessToken("kevin@test.com", "Password123!");
+
+    TaskEntity task = createTask("Finish me", "Move to done", ownerProject.getId(), owner.getId());
+    task.setTaskStatus(TaskStatus.IN_PROGRESS);
+    taskRepository.save(task);
+
+    mockMvc
+        .perform(
+            put("/api/task/update")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                                {
+                                  "id": %d,
+                                  "projectId": %d,
+                                  "taskStatus": "DONE"
+                                }
+                                """
+                        .formatted(task.getId(), ownerProject.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(task.getId()))
+        .andExpect(jsonPath("$.projectId").value(ownerProject.getId()))
+        .andExpect(jsonPath("$.taskStatus").value("DONE"))
+        .andExpect(jsonPath("$.completionDate").isNotEmpty());
+
+    TaskEntity updatedTask = taskRepository.findById(task.getId()).orElseThrow();
+
+    assertThat(updatedTask.getTaskStatus()).isEqualTo(TaskStatus.DONE);
+    assertThat(updatedTask.getCompletionDate()).isNotNull();
   }
 
   @Test
