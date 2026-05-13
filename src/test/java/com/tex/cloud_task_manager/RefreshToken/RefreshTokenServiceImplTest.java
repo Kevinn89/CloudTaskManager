@@ -9,12 +9,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenServiceImpl;
+import com.tex.cloud_task_manager.User.UserEntity;
+import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -22,189 +25,168 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenServiceImpl;
-import com.tex.cloud_task_manager.User.UserEntity;
-import com.tex.cloud_task_manager.User.UserEntityRepository;
-import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
-
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceImplTest {
 
-    @Mock
-    private RefreshTokenRepository refreshTokenRepository;
+  @Mock private RefreshTokenRepository refreshTokenRepository;
 
-    @Mock
-    private UserEntityRepository userEntityRepository; 
+  @Mock private UserEntityRepository userEntityRepository;
 
-    @InjectMocks
-    private RefreshTokenServiceImpl refreshTokenService;
+  @InjectMocks private RefreshTokenServiceImpl refreshTokenService;
 
-    @Test
-    void revokeRefreshTokenShouldRevokeTokenWhenTokenExists() {
-        // Arrange
-        String rawToken = "raw-refresh-token";
-        String tokenHash = sha256(rawToken);
+  @Test
+  void revokeRefreshTokenShouldRevokeTokenWhenTokenExists() {
+    // Arrange
+    String rawToken = "raw-refresh-token";
+    String tokenHash = sha256(rawToken);
 
-        when(refreshTokenRepository.revokeActiveTokensByTokenHash(
-                eq(tokenHash),
-                any(LocalDateTime.class)
-        )).thenReturn(1);
+    when(refreshTokenRepository.revokeActiveTokensByTokenHash(
+            eq(tokenHash), any(LocalDateTime.class)))
+        .thenReturn(1);
 
-        // Act
-        refreshTokenService.revokeRefreshToken(rawToken);
+    // Act
+    refreshTokenService.revokeRefreshToken(rawToken);
 
-        // Assert
-        verify(refreshTokenRepository).revokeActiveTokensByTokenHash(
-                eq(tokenHash),
-                any(LocalDateTime.class)
-        );
+    // Assert
+    verify(refreshTokenRepository)
+        .revokeActiveTokensByTokenHash(eq(tokenHash), any(LocalDateTime.class));
+  }
+
+  @Test
+  void revokeRefreshTokenShouldThrowUnauthorizedWhenTokenDoesNotExist() {
+    // Arrange
+    String rawToken = "bad-refresh-token";
+    String tokenHash = sha256(rawToken);
+
+    when(refreshTokenRepository.revokeActiveTokensByTokenHash(
+            eq(tokenHash), any(LocalDateTime.class)))
+        .thenReturn(0);
+
+    // Act + Assert
+    assertThatThrownBy(() -> refreshTokenService.revokeRefreshToken(rawToken))
+        .isInstanceOf(UnauthorizedException.class)
+        .hasMessageContaining("Invalid refresh token");
+
+    verify(refreshTokenRepository)
+        .revokeActiveTokensByTokenHash(eq(tokenHash), any(LocalDateTime.class));
+  }
+
+  @Test
+  void getRefreshTokenNotRevokedShouldThrowWhenTokenDoesNotExist() {
+    // Arrange
+    String rawToken = "missing-refresh-token";
+    String tokenHash = sha256(rawToken);
+
+    when(refreshTokenRepository.findByTokenHashAndRevoked(tokenHash, false)).thenReturn(null);
+
+    // Act + Assert
+    assertThatThrownBy(() -> refreshTokenService.getRefreshTokenNotRevoked(rawToken))
+        .isInstanceOf(UnauthorizedException.class);
+
+    verify(refreshTokenRepository).findByTokenHashAndRevoked(tokenHash, false);
+    verify(refreshTokenRepository, never()).save(any(RefreshTokenEntity.class));
+  }
+
+  @Test
+  void generateRefreshTokenShouldCreateAndSaveRefreshTokenWhenUserExists() {
+    // Arrange
+    String email = "test@example.com";
+
+    UserEntity user =
+        UserEntity.builder()
+            .id(10L)
+            .name("Kevin")
+            .email(email)
+            .password("encoded-password")
+            .build();
+
+    when(userEntityRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+    when(refreshTokenRepository.save(any(RefreshTokenEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Act
+    RefreshTokenEntity result = refreshTokenService.generateRefreshToken(email);
+
+    // Assert
+    assertThat(result).isNotNull();
+    assertThat(result.getUserId()).isEqualTo(10L);
+    assertThat(result.getTokenHash()).isNotBlank();
+    assertThat(result.getRawToken()).isNotBlank();
+    assertThat(result.getExpiresAt()).isAfter(LocalDateTime.now());
+    assertThat(result.getCreatedAt()).isNotNull();
+    assertThat(result.getLastUsedAt()).isNull();
+    assertThat(result.getRevokedAt()).isNull();
+    assertThat(result.isRevoked()).isFalse();
+
+    verify(userEntityRepository).findByEmail(email);
+    verify(refreshTokenRepository, times(1)).save(any(RefreshTokenEntity.class));
+  }
+
+  @Test
+  void generateRefreshTokenShouldSaveRefreshTokenWithCorrectFields() {
+    // Arrange
+    String email = "test@example.com";
+
+    UserEntity user =
+        UserEntity.builder()
+            .id(10L)
+            .name("Kevin")
+            .email(email)
+            .password("encoded-password")
+            .build();
+
+    ArgumentCaptor<RefreshTokenEntity> refreshTokenCaptor =
+        ArgumentCaptor.forClass(RefreshTokenEntity.class);
+
+    when(userEntityRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+    when(refreshTokenRepository.save(any(RefreshTokenEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Act
+    refreshTokenService.generateRefreshToken(email);
+
+    // Assert
+    verify(refreshTokenRepository, times(1)).save(refreshTokenCaptor.capture());
+
+    RefreshTokenEntity capturedRefreshToken = refreshTokenCaptor.getAllValues().get(0);
+
+    assertThat(capturedRefreshToken.getUserId()).isEqualTo(10L);
+    assertThat(capturedRefreshToken.getRawToken()).isNotBlank();
+    assertThat(capturedRefreshToken.getTokenHash())
+        .isEqualTo(sha256(capturedRefreshToken.getRawToken()));
+    assertThat(capturedRefreshToken.getExpiresAt()).isAfter(LocalDateTime.now());
+    assertThat(capturedRefreshToken.getCreatedAt()).isNotNull();
+    assertThat(capturedRefreshToken.getLastUsedAt()).isNull();
+    assertThat(capturedRefreshToken.getRevokedAt()).isNull();
+    assertThat(capturedRefreshToken.isRevoked()).isFalse();
+  }
+
+  @Test
+  void generateRefreshTokenShouldThrowWhenUserDoesNotExist() {
+    // Arrange
+    String email = "missing@example.com";
+
+    when(userEntityRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+    // Act + Assert
+    assertThatThrownBy(() -> refreshTokenService.generateRefreshToken(email))
+        .isInstanceOf(UnauthorizedException.class);
+
+    verify(userEntityRepository).findByEmail(email);
+    verify(refreshTokenRepository, never()).save(any(RefreshTokenEntity.class));
+  }
+
+  private static String sha256(String token) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+      byte[] hashBytes = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+
+      return HexFormat.of().formatHex(hashBytes);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-
-    @Test
-    void revokeRefreshTokenShouldThrowUnauthorizedWhenTokenDoesNotExist() {
-        // Arrange
-        String rawToken = "bad-refresh-token";
-        String tokenHash = sha256(rawToken);
-
-        when(refreshTokenRepository.revokeActiveTokensByTokenHash(
-                eq(tokenHash),
-                any(LocalDateTime.class)
-        )).thenReturn(0);
-
-        // Act + Assert
-        assertThatThrownBy(() -> refreshTokenService.revokeRefreshToken(rawToken))
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessageContaining("Invalid refresh token");
-
-        verify(refreshTokenRepository).revokeActiveTokensByTokenHash(
-                eq(tokenHash),
-                any(LocalDateTime.class)
-        );
-    }
-
-    @Test
-    void getRefreshTokenNotRevokedShouldThrowWhenTokenDoesNotExist() {
-        // Arrange
-        String rawToken = "missing-refresh-token";
-        String tokenHash = sha256(rawToken);
-
-        when(refreshTokenRepository.findByTokenHashAndRevoked(tokenHash, false))
-                .thenReturn(null);
-
-        // Act + Assert
-        assertThatThrownBy(() -> refreshTokenService.getRefreshTokenNotRevoked(rawToken))
-                .isInstanceOf(UnauthorizedException.class);
-
-        verify(refreshTokenRepository).findByTokenHashAndRevoked(tokenHash, false);
-        verify(refreshTokenRepository, never()).save(any(RefreshTokenEntity.class));
-    }
-
-    @Test
-    void generateRefreshTokenShouldCreateAndSaveRefreshTokenWhenUserExists() {
-        // Arrange
-        String email = "test@example.com";
-
-        UserEntity user = UserEntity.builder()
-                .id(10L)
-                .name("Kevin")
-                .email(email)
-                .password("encoded-password")
-                .build();
-
-        when(userEntityRepository.findByEmail(email))
-                .thenReturn(Optional.of(user));
-
-        when(refreshTokenRepository.save(any(RefreshTokenEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Act
-        RefreshTokenEntity result = refreshTokenService.generateRefreshToken(email);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(10L);
-        assertThat(result.getTokenHash()).isNotBlank();
-        assertThat(result.getRawToken()).isNotBlank();
-        assertThat(result.getExpiresAt()).isAfter(LocalDateTime.now());
-        assertThat(result.getCreatedAt()).isNotNull();
-        assertThat(result.getLastUsedAt()).isNull();
-        assertThat(result.getRevokedAt()).isNull();
-        assertThat(result.isRevoked()).isFalse();
-
-
-        verify(userEntityRepository).findByEmail(email);
-        verify(refreshTokenRepository, times(1)).save(any(RefreshTokenEntity.class));
-    }
-
-    @Test
-    void generateRefreshTokenShouldSaveRefreshTokenWithCorrectFields() {
-        // Arrange
-        String email = "test@example.com";
-
-        UserEntity user = UserEntity.builder()
-                .id(10L)
-                .name("Kevin")
-                .email(email)
-                .password("encoded-password")
-                .build();
-
-        ArgumentCaptor<RefreshTokenEntity> refreshTokenCaptor =
-                ArgumentCaptor.forClass(RefreshTokenEntity.class);
-
-        when(userEntityRepository.findByEmail(email))
-                .thenReturn(Optional.of(user));
-
-        when(refreshTokenRepository.save(any(RefreshTokenEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Act
-        refreshTokenService.generateRefreshToken(email);
-
-        // Assert
-        verify(refreshTokenRepository, times(1)).save(refreshTokenCaptor.capture());
-
-        RefreshTokenEntity capturedRefreshToken = refreshTokenCaptor.getAllValues().get(0);
-
-        assertThat(capturedRefreshToken.getUserId()).isEqualTo(10L);
-        assertThat(capturedRefreshToken.getRawToken()).isNotBlank();
-        assertThat(capturedRefreshToken.getTokenHash()).isEqualTo(
-                sha256(capturedRefreshToken.getRawToken())
-        );
-        assertThat(capturedRefreshToken.getExpiresAt()).isAfter(LocalDateTime.now());
-        assertThat(capturedRefreshToken.getCreatedAt()).isNotNull();
-        assertThat(capturedRefreshToken.getLastUsedAt()).isNull();
-        assertThat(capturedRefreshToken.getRevokedAt()).isNull();
-        assertThat(capturedRefreshToken.isRevoked()).isFalse();
-
-    }
-
-    @Test
-    void generateRefreshTokenShouldThrowWhenUserDoesNotExist() {
-        // Arrange
-        String email = "missing@example.com";
-
-        when(userEntityRepository.findByEmail(email))
-                .thenReturn(Optional.empty());
-
-        // Act + Assert
-        assertThatThrownBy(() -> refreshTokenService.generateRefreshToken(email))
-                .isInstanceOf(UnauthorizedException.class);
-
-        verify(userEntityRepository).findByEmail(email);
-        verify(refreshTokenRepository, never()).save(any(RefreshTokenEntity.class));
-    }
-
-    private static String sha256(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] hashBytes = digest.digest(
-                    token.getBytes(StandardCharsets.UTF_8)
-            );
-
-            return HexFormat.of().formatHex(hashBytes);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+  }
 }

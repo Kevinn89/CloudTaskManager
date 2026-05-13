@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.0.6'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.diffplug.spotless' version '7.0.4'
 }
 
 group = 'com.tex'
@@ -98,4 +99,15 @@ tasks.register('integrationTest', Test) {
 tasks.named('check') {
 	dependsOn tasks.named('test')
 	dependsOn tasks.named('integrationTest')
+}
+
+// ./gradlew spotlessApply
+// ./gradlew spotlessCheck
+spotless {
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }

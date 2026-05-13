@@ -2,93 +2,76 @@ package com.tex.cloud_task_manager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.tex.cloud_task_manager.User.UserEntity;
+import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.User.response_request.UserResponse;
+import com.tex.cloud_task_manager.User.service.UserService;
 import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import com.tex.cloud_task_manager.User.UserEntity;
-import com.tex.cloud_task_manager.User.UserEntityRepository;
-import com.tex.cloud_task_manager.User.response_request.UserResponse;
-import com.tex.cloud_task_manager.User.service.UserService;
-
-
 class UserServiceIntegrationTest extends AbstractIntegrationTest {
 
-    @Autowired
-    private UserService userService;
+  @Autowired private UserService userService;
 
-    @Autowired
-    private UserEntityRepository userEntityRepository;
+  @Autowired private UserEntityRepository userEntityRepository;
 
-    @BeforeEach
-    void setUp() {
-        userEntityRepository.deleteAll();
-    }
+  @BeforeEach
+  void setUp() {
+    userEntityRepository.deleteAll();
+  }
 
-    @Test
-    void createUserShouldPersistUserToDatabase() {
-        // Act
-        UserEntity createdUser = userService.createUser(
-                "Kevin",
-                "kevin@test.com",
-                "encoded-password"
-        );
+  @Test
+  void createUserShouldPersistUserToDatabase() {
+    // Act
+    UserEntity createdUser = userService.createUser("Kevin", "kevin@test.com", "encoded-password");
 
-        // Assert
-        assertThat(createdUser.getId()).isNotNull();
-        assertThat(createdUser.getName()).isEqualTo("Kevin");
-        assertThat(createdUser.getEmail()).isEqualTo("kevin@test.com");
-        assertThat(createdUser.getPassword()).isEqualTo("encoded-password");
-        assertThat(createdUser.getCreatedAt()).isNotNull();
-        assertThat(createdUser.getUpdatedAt()).isNull();
+    // Assert
+    assertThat(createdUser.getId()).isNotNull();
+    assertThat(createdUser.getName()).isEqualTo("Kevin");
+    assertThat(createdUser.getEmail()).isEqualTo("kevin@test.com");
+    assertThat(createdUser.getPassword()).isEqualTo("encoded-password");
+    assertThat(createdUser.getCreatedAt()).isNotNull();
+    assertThat(createdUser.getUpdatedAt()).isNull();
 
-        Optional<UserEntity> foundUser = userEntityRepository.findById(createdUser.getId());
+    Optional<UserEntity> foundUser = userEntityRepository.findById(createdUser.getId());
 
-        assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getEmail()).isEqualTo("kevin@test.com");
-    }
+    assertThat(foundUser).isPresent();
+    assertThat(foundUser.get().getEmail()).isEqualTo("kevin@test.com");
+  }
 
-    @Test
-    void getAllUsersShouldReturnAllPersistedUsers() {
-        // Arrange
-        userService.createUser("Kevin", "kevin@test.com", "password-one");
-        userService.createUser("Alex", "alex@test.com", "password-two");
+  @Test
+  void getAllUsersShouldReturnAllPersistedUsers() {
+    // Arrange
+    userService.createUser("Kevin", "kevin@test.com", "password-one");
+    userService.createUser("Alex", "alex@test.com", "password-two");
 
-        // Act
-        var users = userService.getAllUsers();
+    // Act
+    var users = userService.getAllUsers();
 
-        // Assert
-        assertThat(users).hasSize(2);
-        assertThat(users)
-                .extracting(UserEntity::getEmail)
-                .containsExactlyInAnyOrder("kevin@test.com", "alex@test.com");
-    }
+    // Assert
+    assertThat(users).hasSize(2);
+    assertThat(users).extracting(UserResponse::name).containsExactlyInAnyOrder("Kevin", "Alex");
+  }
 
-    @Test
-    @WithMockUser(username = "kevin@test.com")
-    void updateUserShouldPersistChangesForCurrentUser() {
-        // Arrange
-        UserEntity createdUser = userService.createUser(
-                "Kevin",
-                "kevin@test.com",
-                "old-password"
-        );
+  @Test
+  @WithMockUser(username = "kevin@test.com")
+  void updateUserShouldPersistChangesForCurrentUser() {
+    // Arrange
+    UserEntity createdUser = userService.createUser("Kevin", "kevin@test.com", "old-password");
 
-        // Act
-        UserResponse response = userService.updateUser("Kevin Updated", "new-password");
+    // Act
+    UserResponse response = userService.updateUser("Kevin Updated", "new-password");
 
-        // Assert
-        assertThat(response.name()).isEqualTo("Kevin Updated");
+    // Assert
+    assertThat(response.name()).isEqualTo("Kevin Updated");
 
-        UserEntity updatedUser = userEntityRepository.findById(createdUser.getId())
-                .orElseThrow();
+    UserEntity updatedUser = userEntityRepository.findById(createdUser.getId()).orElseThrow();
 
-        assertThat(updatedUser.getName()).isEqualTo("Kevin Updated");
-        assertThat(updatedUser.getPassword()).isEqualTo("new-password");
-        assertThat(updatedUser.getUpdatedAt()).isNotNull();
-    }
-
+    assertThat(updatedUser.getName()).isEqualTo("Kevin Updated");
+    assertThat(updatedUser.getPassword()).isEqualTo("new-password");
+    assertThat(updatedUser.getUpdatedAt()).isNotNull();
+  }
 }

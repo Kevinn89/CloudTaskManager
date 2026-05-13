@@ -5,43 +5,39 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-
 import com.jayway.jsonpath.JsonPath;
 import com.tex.cloud_task_manager.AbstractWebIntegrationTest;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenRepository;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
 class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @Autowired
-    private UserEntityRepository userEntityRepository;
+  @Autowired private UserEntityRepository userEntityRepository;
 
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
+  @Autowired private RefreshTokenRepository refreshTokenRepository;
 
-    @BeforeEach
-    void setUp() {
-        refreshTokenRepository.deleteAll();
-        userEntityRepository.deleteAll();
-    }
+  @BeforeEach
+  void setUp() {
+    refreshTokenRepository.deleteAll();
+    userEntityRepository.deleteAll();
+  }
 
-    @Test
-    void registerShouldCreateUserThroughHttpEndpoint() throws Exception {
-        String requestBody = """
+  @Test
+  void registerShouldCreateUserThroughHttpEndpoint() throws Exception {
+    String requestBody =
+        """
                 {
                   "name": "Kevin",
                   "email": "kevin@test.com",
@@ -49,28 +45,28 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("User registered successfully "));
+    mockMvc
+        .perform(
+            post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("User registered successfully "));
 
-        UserEntity savedUser = userEntityRepository.findByEmail("kevin@test.com")
-                .orElseThrow();
+    UserEntity savedUser = userEntityRepository.findByEmail("kevin@test.com").orElseThrow();
 
-        assertThat(savedUser.getId()).isNotNull();
-        assertThat(savedUser.getName()).isEqualTo("Kevin");
-        assertThat(savedUser.getEmail()).isEqualTo("kevin@test.com");
-        assertThat(savedUser.getPassword()).isNotEqualTo("Password123!");
-        assertThat(savedUser.getCreatedAt()).isNotNull();
-    }
+    assertThat(savedUser.getId()).isNotNull();
+    assertThat(savedUser.getName()).isEqualTo("Kevin");
+    assertThat(savedUser.getEmail()).isEqualTo("kevin@test.com");
+    assertThat(savedUser.getPassword()).isNotEqualTo("Password123!");
+    assertThat(savedUser.getCreatedAt()).isNotNull();
+  }
 
-    @Test
-    void registerShouldReturnAlreadyExistsMessageWhenEmailAlreadyExists() throws Exception {
-       
-        registerUser();
+  @Test
+  void registerShouldReturnAlreadyExistsMessageWhenEmailAlreadyExists() throws Exception {
 
-        String duplicateBody = """
+    registerUser();
+
+    String duplicateBody =
+        """
                 {
                   "name": "Kevin Again",
                   "email": "kevin@test.com",
@@ -78,148 +74,159 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(duplicateBody))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.message").value("Email is already in use"));
+    mockMvc
+        .perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(duplicateBody))
+        .andExpect(status().is4xxClientError())
+        .andExpect(jsonPath("$.message").value("Email is already in use"));
 
-        assertThat(userEntityRepository.findAll()).hasSize(1);
-    }
+    assertThat(userEntityRepository.findAll()).hasSize(1);
+  }
 
-    @Test
-    void loginShouldReturnJwtAndRefreshTokenThroughHttpEndpoint() throws Exception {
-        registerUser();
+  @Test
+  void loginShouldReturnJwtAndRefreshTokenThroughHttpEndpoint() throws Exception {
+    registerUser();
 
-        String loginBody = """
+    String loginBody =
+        """
                 {
                   "email": "kevin@test.com",
                   "password": "Password123!"
                 }
                 """;
 
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("User logged in successfully"))
-                .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.tokenExpiration").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshTokenExpiration").isNotEmpty());
+    mockMvc
+        .perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("User logged in successfully"))
+        .andExpect(jsonPath("$.token").isNotEmpty())
+        .andExpect(jsonPath("$.tokenExpiration").isNotEmpty())
+        .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+        .andExpect(jsonPath("$.refreshTokenExpiration").isNotEmpty());
 
-        assertThat(refreshTokenRepository.findAll()).hasSize(1);
-    }
+    assertThat(refreshTokenRepository.findAll()).hasSize(1);
+  }
 
-    @Test
-    void loginShouldReturnInvalidCredentialsWhenPasswordIsWrong() throws Exception {
-        registerUser();
+  @Test
+  void loginShouldReturnInvalidCredentialsWhenPasswordIsWrong() throws Exception {
+    registerUser();
 
-        String loginBody = """
+    String loginBody =
+        """
                 {
                   "email": "kevin@test.com",
                   "password": "WrongPassword123!"
                 }
                 """;
 
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+    mockMvc
+        .perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody))
+        .andExpect(status().is4xxClientError())
+        .andExpect(jsonPath("$.message").value("Invalid credentials"));
 
-        assertThat(refreshTokenRepository.findAll()).isEmpty();
-    }
+    assertThat(refreshTokenRepository.findAll()).isEmpty();
+  }
 
-    @Test
-    void refreshShouldReturnNewJwtWhenRefreshTokenIsValid() throws Exception {
-        registerUser();
+  @Test
+  void refreshShouldReturnNewJwtWhenRefreshTokenIsValid() throws Exception {
+    registerUser();
 
-        String refreshToken = loginAndExtractRefreshToken();
+    String refreshToken = loginAndExtractRefreshToken();
 
-        String refreshBody = """
+    String refreshBody =
+        """
                 {
                   "refreshToken": "%s",
                   "email": "kevin@test.com"
                 }
-                """.formatted(refreshToken);
+                """
+            .formatted(refreshToken);
 
-        mockMvc.perform(post("/api/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(refreshBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Token refreshed successfully"))
-                .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.tokenExpiration").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").value(refreshToken))
-                .andExpect(jsonPath("$.refreshTokenExpiration").isNotEmpty());
+    mockMvc
+        .perform(
+            post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(refreshBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("Token refreshed successfully"))
+        .andExpect(jsonPath("$.token").isNotEmpty())
+        .andExpect(jsonPath("$.tokenExpiration").isNotEmpty())
+        .andExpect(jsonPath("$.refreshToken").value(refreshToken))
+        .andExpect(jsonPath("$.refreshTokenExpiration").isNotEmpty());
 
-        RefreshTokenEntity savedToken =
-                refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), false);
+    RefreshTokenEntity savedToken =
+        refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), false);
 
-        assertThat(savedToken).isNotNull();
-        assertThat(savedToken.getLastUsedAt()).isNull();
-    }
+    assertThat(savedToken).isNotNull();
+    assertThat(savedToken.getLastUsedAt()).isNull();
+  }
 
-    @Test
-    void logoutShouldRevokeRefreshTokenThroughHttpEndpoint() throws Exception {
-       
-        registerUser();
+  @Test
+  void logoutShouldRevokeRefreshTokenThroughHttpEndpoint() throws Exception {
 
-        String refreshToken = loginAndExtractRefreshToken();
+    registerUser();
 
-        String logoutBody = """
+    String refreshToken = loginAndExtractRefreshToken();
+
+    String logoutBody =
+        """
                 {
                   "refreshToken": "%s"
                 }
-                """.formatted(refreshToken);
+                """
+            .formatted(refreshToken);
 
-        mockMvc.perform(post("/api/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(logoutBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("User logged out successfully"));
+    mockMvc
+        .perform(
+            post("/api/auth/logout").contentType(MediaType.APPLICATION_JSON).content(logoutBody))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("User logged out successfully"));
 
-        RefreshTokenEntity revokedToken =
-                refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), true);
+    RefreshTokenEntity revokedToken =
+        refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), true);
 
-        assertThat(revokedToken).isNotNull();
-        assertThat(revokedToken.isRevoked()).isTrue();
-        assertThat(revokedToken.getRevokedAt()).isNotNull();
-    }
+    assertThat(revokedToken).isNotNull();
+    assertThat(revokedToken.isRevoked()).isTrue();
+    assertThat(revokedToken.getRevokedAt()).isNotNull();
+  }
 
-    @Test
-    void refreshShouldFailAfterLogout() throws Exception {
-        registerUser();
+  @Test
+  void refreshShouldFailAfterLogout() throws Exception {
+    registerUser();
 
-        String refreshToken = loginAndExtractRefreshToken();
+    String refreshToken = loginAndExtractRefreshToken();
 
-        String logoutBody = """
+    String logoutBody =
+        """
                 {
                   "refreshToken": "%s"
                 }
-                """.formatted(refreshToken);
+                """
+            .formatted(refreshToken);
 
-        mockMvc.perform(post("/api/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(logoutBody))
-                .andExpect(status().isOk());
+    mockMvc
+        .perform(
+            post("/api/auth/logout").contentType(MediaType.APPLICATION_JSON).content(logoutBody))
+        .andExpect(status().isOk());
 
-        String refreshBody = """
+    String refreshBody =
+        """
                 {
                   "refreshToken": "%s",
                   "email": "kevin@test.com"
                 }
-                """.formatted(refreshToken);
+                """
+            .formatted(refreshToken);
 
-        mockMvc.perform(post("/api/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(refreshBody))
-                .andExpect(status().isUnauthorized());
-    }
+    mockMvc
+        .perform(
+            post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(refreshBody))
+        .andExpect(status().isUnauthorized());
+  }
 
-    private void registerUser() throws Exception {
-        String requestBody = """
+  private void registerUser() throws Exception {
+    String requestBody =
+        """
                 {
                   "name": "Kevin",
                   "email": "kevin@test.com",
@@ -227,44 +234,41 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk());
-    }
+    mockMvc
+        .perform(
+            post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+        .andExpect(status().isOk());
+  }
 
-    private String loginAndExtractRefreshToken() throws Exception {
-        String loginBody = """
+  private String loginAndExtractRefreshToken() throws Exception {
+    String loginBody =
+        """
                 {
                   "email": "kevin@test.com",
                   "password": "Password123!"
                 }
                 """;
 
-        var result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andReturn();
+    var result =
+        mockMvc
+            .perform(
+                post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+            .andReturn();
 
-        return JsonPath.read(
-                result.getResponse().getContentAsString(),
-                "$.refreshToken"
-        );
+    return JsonPath.read(result.getResponse().getContentAsString(), "$.refreshToken");
+  }
+
+  private static String sha256(String token) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+      byte[] hashBytes = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+
+      return HexFormat.of().formatHex(hashBytes);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-
-    private static String sha256(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] hashBytes = digest.digest(
-                    token.getBytes(StandardCharsets.UTF_8)
-            );
-
-            return HexFormat.of().formatHex(hashBytes);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+  }
 }
