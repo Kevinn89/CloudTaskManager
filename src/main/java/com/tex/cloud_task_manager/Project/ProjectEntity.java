@@ -1,13 +1,6 @@
 package com.tex.cloud_task_manager.Project;
 
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.tex.cloud_task_manager.Project.ProjectPriority;
 import com.tex.cloud_task_manager.Task.TaskEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,6 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,27 +27,33 @@ import lombok.Setter;
 @Builder
 public class ProjectEntity {
 
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-        @Column(name = "user_id", nullable = false)
-        private Long userId;
-        @Column(name = "name", nullable = false)
-        private String name;
-        @Column(name = "description", length = 500)
-        private String description;
-        @Column(name = "created_at", nullable = false, updatable = false)
-        private LocalDateTime createdAt;
-        @Column(name = "updated_at", nullable = true)
-        private LocalDateTime updatedAt;
-        @Column(name = "status", nullable = false)
-        private ProjectStatus status;
-        @Column(name = "priority", nullable = false)
-        @Builder.Default
-        private ProjectPriority priority = ProjectPriority.LOW;
-        
-        @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
-        @Builder.Default
-        private List<TaskEntity> tasks = new ArrayList<>();
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
+  @Column(name = "user_id", nullable = false)
+  private Long userId;
+
+  @Column(name = "name", nullable = false)
+  private String name;
+
+  @Column(name = "description", length = 500)
+  private String description;
+
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @Column(name = "updated_at", nullable = true)
+  private LocalDateTime updatedAt;
+
+  @Column(name = "status", nullable = false)
+  private ProjectStatus status;
+
+  @Column(name = "priority", nullable = false)
+  @Builder.Default
+  private ProjectPriority priority = ProjectPriority.LOW;
+
+  @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
+  @Builder.Default
+  private List<TaskEntity> tasks = new ArrayList<>();
 }

@@ -5,10 +5,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tex.cloud_task_manager.Security.CurrentUserService;
+import com.tex.cloud_task_manager.User.response_request.UserResponse;
+import com.tex.cloud_task_manager.User.service.UserServiceImpl;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -16,147 +18,140 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.tex.cloud_task_manager.Security.CurrentUserService;
-import com.tex.cloud_task_manager.User.response_request.UserResponse;
-import com.tex.cloud_task_manager.User.service.UserServiceImpl;
-
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
-    @Mock
-    private UserEntityRepository userEntityRepository;
+  @Mock private UserEntityRepository userEntityRepository;
 
-    @Mock
-    private CurrentUserService currentUserService;
+  @Mock private CurrentUserService currentUserService;
 
-    @InjectMocks
-    private UserServiceImpl userService;
+  @InjectMocks private UserServiceImpl userService;
 
-    @Test
-    void createUserShouldBuildUserAndSaveIt() {
-        // Arrange
-        String name = "Kevin";
-        String email = "kevin@test.com";
-        String password = "Password123!";
+  @Test
+  void createUserShouldBuildUserAndSaveIt() {
+    // Arrange
+    String name = "Kevin";
+    String email = "kevin@test.com";
+    String password = "Password123!";
 
-        UserEntity savedUser = UserEntity.builder()
-                .id(1L)
-                .name(name)
-                .email(email)
-                .password(password)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(null)
-                .build();
+    UserEntity savedUser =
+        UserEntity.builder()
+            .id(1L)
+            .name(name)
+            .email(email)
+            .password(password)
+            .createdAt(LocalDateTime.now())
+            .updatedAt(null)
+            .build();
 
-        when(userEntityRepository.save(any(UserEntity.class)))
-                .thenReturn(savedUser);
+    when(userEntityRepository.save(any(UserEntity.class))).thenReturn(savedUser);
 
-        // Act
-        UserEntity result = userService.createUser(name, email, password);
+    // Act
+    UserEntity result = userService.createUser(name, email, password);
 
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getName()).isEqualTo(name);
-        assertThat(result.getEmail()).isEqualTo(email);
-        assertThat(result.getPassword()).isEqualTo(password);
+    // Assert
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isEqualTo(1L);
+    assertThat(result.getName()).isEqualTo(name);
+    assertThat(result.getEmail()).isEqualTo(email);
+    assertThat(result.getPassword()).isEqualTo(password);
 
-        verify(userEntityRepository).save(any(UserEntity.class));
-    }
+    verify(userEntityRepository).save(any(UserEntity.class));
+  }
 
-    @Test
-    void createUserShouldSetCreatedAtAndUpdatedAtNull() {
-        // Arrange
-        ArgumentCaptor<UserEntity> userCaptor = ArgumentCaptor.forClass(UserEntity.class);
+  @Test
+  void createUserShouldSetCreatedAtAndUpdatedAtNull() {
+    // Arrange
+    ArgumentCaptor<UserEntity> userCaptor = ArgumentCaptor.forClass(UserEntity.class);
 
-        when(userEntityRepository.save(any(UserEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+    when(userEntityRepository.save(any(UserEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
-        userService.createUser("Kevin", "kevin@test.com", "Password123!");
+    // Act
+    userService.createUser("Kevin", "kevin@test.com", "Password123!");
 
-        // Assert
-        verify(userEntityRepository).save(userCaptor.capture());
+    // Assert
+    verify(userEntityRepository).save(userCaptor.capture());
 
-        UserEntity capturedUser = userCaptor.getValue();
+    UserEntity capturedUser = userCaptor.getValue();
 
-        assertThat(capturedUser.getCreatedAt()).isNotNull();
-        assertThat(capturedUser.getUpdatedAt()).isNull();
-    }
+    assertThat(capturedUser.getCreatedAt()).isNotNull();
+    assertThat(capturedUser.getUpdatedAt()).isNull();
+  }
 
-    @Test
-    void getAllUsersShouldReturnAllUsers() {
-        // Arrange
-        UserEntity userOne = UserEntity.builder()
-                .id(1L)
-                .name("Kevin")
-                .email("kevin@test.com")
-                .password("Password123!")
-                .build();
+  @Test
+  void getAllUsersShouldReturnAllUsers() {
+    // Arrange
+    UserEntity userOne =
+        UserEntity.builder()
+            .id(1L)
+            .name("Kevin")
+            .email("kevin@test.com")
+            .password("Password123!")
+            .build();
 
-        UserEntity userTwo = UserEntity.builder()
-                .id(2L)
-                .name("Alex")
-                .email("alex@test.com")
-                .password("Password456!")
-                .build();
+    UserEntity userTwo =
+        UserEntity.builder()
+            .id(2L)
+            .name("Alex")
+            .email("alex@test.com")
+            .password("Password456!")
+            .build();
 
-        when(userEntityRepository.findAll())
-                .thenReturn(List.of(userOne, userTwo));
+    when(userEntityRepository.findAll()).thenReturn(List.of(userOne, userTwo));
 
-        // Act
-        List<UserEntity> result = userService.getAllUsers();
+    // Act
+    List<UserResponse> result = userService.getAllUsers();
 
-        // Assert
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(UserEntity::getEmail)
-                .containsExactly("kevin@test.com", "alex@test.com");
+    // Assert
+    assertThat(result).hasSize(2);
+    assertThat(result).extracting(UserResponse::name).containsExactly("Kevin", "Alex");
 
-        verify(userEntityRepository).findAll();
-    }
+    verify(userEntityRepository).findAll();
+  }
 
-    @Test
-    void getAllUsersShouldReturnEmptyListWhenNoUsersExist() {
-        // Arrange
-        when(userEntityRepository.findAll())
-                .thenReturn(List.of());
+  @Test
+  void getAllUsersShouldReturnEmptyListWhenNoUsersExist() {
+    // Arrange
+    when(userEntityRepository.findAll()).thenReturn(List.of());
 
-        // Act
-        List<UserEntity> result = userService.getAllUsers();
+    // Act
+    List<UserResponse> result = userService.getAllUsers();
 
-        // Assert
-        assertThat(result).isEmpty();
+    // Assert
+    assertThat(result).isEmpty();
 
-        verify(userEntityRepository).findAll();
-    }
+    verify(userEntityRepository).findAll();
+  }
 
-    @Test
-    void updateUserShouldUpdateCurrentUserAndSaveIt() {
-        // Arrange
-        UserEntity existingUser = UserEntity.builder()
-                .id(1L)
-                .name("Kevin")
-                .email("kevin@test.com")
-                .password("old-password")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(null)
-                .build();
+  @Test
+  void updateUserShouldUpdateCurrentUserAndSaveIt() {
+    // Arrange
+    UserEntity existingUser =
+        UserEntity.builder()
+            .id(1L)
+            .name("Kevin")
+            .email("kevin@test.com")
+            .password("old-password")
+            .createdAt(LocalDateTime.now())
+            .updatedAt(null)
+            .build();
 
-        when(currentUserService.getCurrentUserId()).thenReturn(1L);
-        when(userEntityRepository.findById(1L)).thenReturn(Optional.of(existingUser));
-        when(userEntityRepository.save(existingUser)).thenReturn(existingUser);
+    when(currentUserService.getCurrentUserId()).thenReturn(1L);
+    when(userEntityRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+    when(userEntityRepository.save(existingUser)).thenReturn(existingUser);
 
-        // Act
-        UserResponse result = userService.updateUser("Kevin Updated", "new-password");
+    // Act
+    UserResponse result = userService.updateUser("Kevin Updated", "new-password");
 
-        // Assert
-        assertThat(result.name()).isEqualTo("Kevin Updated");
-        assertThat(existingUser.getName()).isEqualTo("Kevin Updated");
-        assertThat(existingUser.getPassword()).isEqualTo("new-password");
-        assertThat(existingUser.getUpdatedAt()).isNotNull();
+    // Assert
+    assertThat(result.name()).isEqualTo("Kevin Updated");
+    assertThat(existingUser.getName()).isEqualTo("Kevin Updated");
+    assertThat(existingUser.getPassword()).isEqualTo("new-password");
+    assertThat(existingUser.getUpdatedAt()).isNotNull();
 
-        verify(currentUserService).getCurrentUserId();
-        verify(userEntityRepository).findById(1L);
-        verify(userEntityRepository).save(existingUser);
-    }
+    verify(currentUserService).getCurrentUserId();
+    verify(userEntityRepository).findById(1L);
+    verify(userEntityRepository).save(existingUser);
+  }
 }

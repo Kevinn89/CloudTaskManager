@@ -5,8 +5,4 @@ public record AuthResponse(
     String token,
     String tokenExpiration,
     String refreshToken,
-    String refreshTokenExpiration
-) {
-
-
-}
+    String refreshTokenExpiration) {}

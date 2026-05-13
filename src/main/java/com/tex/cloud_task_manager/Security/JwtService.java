@@ -1,89 +1,76 @@
 package com.tex.cloud_task_manager.Security;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-
-import javax.crypto.SecretKey;
-
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
 import com.tex.cloud_task_manager.Config.JwtProperties;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class JwtService {
 
-     
-    private final JwtProperties jwtProps;
-    
-    
-      private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtProps.secret());
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
+  private final JwtProperties jwtProps;
 
-    public String generateToken(UserDetails userDetails) {
+  private SecretKey getSigningKey() {
+    byte[] keyBytes = Decoders.BASE64.decode(jwtProps.secret());
+    return Keys.hmacShaKeyFor(keyBytes);
+  }
 
-        return buildToken(userDetails.getUsername());
-    }
+  public String generateToken(UserDetails userDetails) {
 
-    private String buildToken(String userName){
+    return buildToken(userDetails.getUsername());
+  }
 
-           Instant now = Instant.now();
+  private String buildToken(String userName) {
 
-        return Jwts.builder()
-                .subject(userName)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(jwtProps.accessTokenExpirationMinutes(), ChronoUnit.MINUTES)))
-                .signWith(getSigningKey())
-                .compact();
-    }
+    Instant now = Instant.now();
 
-    public String extractUsername(String token) {
+    return Jwts.builder()
+        .subject(userName)
+        .issuedAt(Date.from(now))
+        .expiration(
+            Date.from(now.plus(jwtProps.accessTokenExpirationMinutes(), ChronoUnit.MINUTES)))
+        .signWith(getSigningKey())
+        .compact();
+  }
 
-        String userName = extractAllClaims(token).getSubject();
-        return userName;
-    }
+  public String extractUsername(String token) {
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        String userName = extractUsername(token);
+    String userName = extractAllClaims(token).getSubject();
+    return userName;
+  }
 
-        return userName.equals(userDetails.getUsername())
-                && !isTokenExpired(token);
-    }
+  public boolean isTokenValid(String token, UserDetails userDetails) {
+    String userName = extractUsername(token);
 
-    private boolean isTokenExpired(String token) {
+    return userName.equals(userDetails.getUsername()) && !isTokenExpired(token);
+  }
 
-        boolean isTokenExpired = extractAllClaims(token)
-                .getExpiration()
-                .before(new Date());
-        return isTokenExpired;
-    }
+  private boolean isTokenExpired(String token) {
 
-     public String extractExpiration(String token) {
+    boolean isTokenExpired = extractAllClaims(token).getExpiration().before(new Date());
+    return isTokenExpired;
+  }
 
-        String expiration = extractAllClaims(token).getExpiration().toString();
-        return expiration;
-    } 
+  public String extractExpiration(String token) {
 
-    
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
+    String expiration = extractAllClaims(token).getExpiration().toString();
+    return expiration;
+  }
 
-    public String generateToken(String email) {
-        return buildToken(email);
-    }
+  private Claims extractAllClaims(String token) {
+    return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
+  }
+
+  public String generateToken(String email) {
+    return buildToken(email);
+  }
 }

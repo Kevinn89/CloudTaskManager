@@ -8,8 +8,6 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 class CloudTaskManagerApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+  @Test
+  void contextLoads() {}
 }

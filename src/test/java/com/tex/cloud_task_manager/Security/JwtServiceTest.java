@@ -3,130 +3,119 @@ package com.tex.cloud_task_manager.Security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.tex.cloud_task_manager.Config.JwtProperties;
+import io.jsonwebtoken.JwtException;
 import java.util.Base64;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.tex.cloud_task_manager.Config.JwtProperties;
-
-import io.jsonwebtoken.JwtException;
-
 class JwtServiceTest {
 
-    private JwtService jwtService;
+  private JwtService jwtService;
 
-    private UserDetails userDetails;
+  private UserDetails userDetails;
 
-    @BeforeEach
-    void setUp() {
-        String rawSecret = "test-secret-key-test-secret-key-test-secret-key-test-secret-key";
-        String base64Secret = Base64.getEncoder().encodeToString(rawSecret.getBytes());
+  @BeforeEach
+  void setUp() {
+    String rawSecret = "test-secret-key-test-secret-key-test-secret-key-test-secret-key";
+    String base64Secret = Base64.getEncoder().encodeToString(rawSecret.getBytes());
 
-        JwtProperties jwtProperties = new JwtProperties(
-                base64Secret,
-                15L,
-                7L
-        );
+    JwtProperties jwtProperties = new JwtProperties(base64Secret, 15L, 7L);
 
-        jwtService = new JwtService(jwtProperties);
+    jwtService = new JwtService(jwtProperties);
 
-        userDetails = org.springframework.security.core.userdetails.User
-                .withUsername("kevin@test.com")
-                .password("encoded-password")
-                .roles("USER")
-                .build();
-    }
+    userDetails =
+        org.springframework.security.core.userdetails.User.withUsername("kevin@test.com")
+            .password("encoded-password")
+            .roles("USER")
+            .build();
+  }
 
-    @Test
-    void generateTokenShouldCreateToken() {
-        // Act
-        String token = jwtService.generateToken(userDetails);
+  @Test
+  void generateTokenShouldCreateToken() {
+    // Act
+    String token = jwtService.generateToken(userDetails);
 
-        // Assert
-        assertThat(token).isNotBlank();
-    }
+    // Assert
+    assertThat(token).isNotBlank();
+  }
 
-    @Test
-    void generateTokenShouldUseUsernameAsSubject() {
-        // Act
-        String token = jwtService.generateToken(userDetails);
+  @Test
+  void generateTokenShouldUseUsernameAsSubject() {
+    // Act
+    String token = jwtService.generateToken(userDetails);
 
-        // Assert
-        assertThat(jwtService.extractUsername(token)).isEqualTo("kevin@test.com");
-    }
+    // Assert
+    assertThat(jwtService.extractUsername(token)).isEqualTo("kevin@test.com");
+  }
 
-    @Test
-    void generateTokenWithEmailShouldUseEmailAsSubject() {
-        // Act
-        String token = jwtService.generateToken("kevin@test.com");
+  @Test
+  void generateTokenWithEmailShouldUseEmailAsSubject() {
+    // Act
+    String token = jwtService.generateToken("kevin@test.com");
 
-        // Assert
-        assertThat(token).isNotBlank();
-        assertThat(jwtService.extractUsername(token)).isEqualTo("kevin@test.com");
-    }
+    // Assert
+    assertThat(token).isNotBlank();
+    assertThat(jwtService.extractUsername(token)).isEqualTo("kevin@test.com");
+  }
 
-    @Test
-    void isTokenValidShouldReturnTrueWhenUsernameMatchesAndTokenIsNotExpired() {
-        // Arrange
-        String token = jwtService.generateToken(userDetails);
+  @Test
+  void isTokenValidShouldReturnTrueWhenUsernameMatchesAndTokenIsNotExpired() {
+    // Arrange
+    String token = jwtService.generateToken(userDetails);
 
-        // Act
-        boolean result = jwtService.isTokenValid(token, userDetails);
+    // Act
+    boolean result = jwtService.isTokenValid(token, userDetails);
 
-        // Assert
-        assertThat(result).isTrue();
-    }
+    // Assert
+    assertThat(result).isTrue();
+  }
 
-    @Test
-    void isTokenValidShouldReturnFalseWhenUsernameDoesNotMatch() {
-        // Arrange
-        String token = jwtService.generateToken(userDetails);
+  @Test
+  void isTokenValidShouldReturnFalseWhenUsernameDoesNotMatch() {
+    // Arrange
+    String token = jwtService.generateToken(userDetails);
 
-        UserDetails differentUser = org.springframework.security.core.userdetails.User
-                .withUsername("other@test.com")
-                .password("encoded-password")
-                .roles("USER")
-                .build();
+    UserDetails differentUser =
+        org.springframework.security.core.userdetails.User.withUsername("other@test.com")
+            .password("encoded-password")
+            .roles("USER")
+            .build();
 
-        // Act
-        boolean result = jwtService.isTokenValid(token, differentUser);
+    // Act
+    boolean result = jwtService.isTokenValid(token, differentUser);
 
-        // Assert
-        assertThat(result).isFalse();
-    }
+    // Assert
+    assertThat(result).isFalse();
+  }
 
-    @Test
-    void extractExpirationShouldReturnExpirationDateString() {
-        // Arrange
-        String token = jwtService.generateToken(userDetails);
+  @Test
+  void extractExpirationShouldReturnExpirationDateString() {
+    // Arrange
+    String token = jwtService.generateToken(userDetails);
 
-        // Act
-        String expiration = jwtService.extractExpiration(token);
+    // Act
+    String expiration = jwtService.extractExpiration(token);
 
-        // Assert
-        assertThat(expiration).isNotBlank();
-    }
+    // Assert
+    assertThat(expiration).isNotBlank();
+  }
 
-    @Test
-    void extractUsernameShouldThrowWhenTokenWasSignedWithDifferentSecret() {
-        // Arrange
-        String token = jwtService.generateToken(userDetails);
+  @Test
+  void extractUsernameShouldThrowWhenTokenWasSignedWithDifferentSecret() {
+    // Arrange
+    String token = jwtService.generateToken(userDetails);
 
-        String otherRawSecret = "different-secret-key-different-secret-key-different-secret-key";
-        String otherBase64Secret = Base64.getEncoder().encodeToString(otherRawSecret.getBytes());
+    String otherRawSecret = "different-secret-key-different-secret-key-different-secret-key";
+    String otherBase64Secret = Base64.getEncoder().encodeToString(otherRawSecret.getBytes());
 
-        JwtProperties otherJwtProperties = new JwtProperties(
-                otherBase64Secret,
-                15L,
-                7L
-        );
+    JwtProperties otherJwtProperties = new JwtProperties(otherBase64Secret, 15L, 7L);
 
-        JwtService otherJwtService = new JwtService(otherJwtProperties);
+    JwtService otherJwtService = new JwtService(otherJwtProperties);
 
-        // Act + Assert
-        assertThatThrownBy(() -> otherJwtService.extractUsername(token))
-                .isInstanceOf(JwtException.class);
-    }
+    // Act + Assert
+    assertThatThrownBy(() -> otherJwtService.extractUsername(token))
+        .isInstanceOf(JwtException.class);
+  }
 }
