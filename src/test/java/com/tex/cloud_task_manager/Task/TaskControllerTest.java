@@ -46,6 +46,7 @@ class TaskControllerTest {
             50L,
             10L,
             1L,
+            null,
             "Create task API",
             "Build task endpoint",
             TaskStatus.TODO,
@@ -111,6 +112,7 @@ class TaskControllerTest {
             1L,
             10L,
             null,
+            null,
             "Task one",
             "First task",
             TaskStatus.TODO,
@@ -124,6 +126,7 @@ class TaskControllerTest {
         new TaskResponse(
             2L,
             10L,
+            null,
             null,
             "Task two",
             "Second task",
@@ -169,6 +172,7 @@ class TaskControllerTest {
         new TaskResponse(
             50L,
             10L,
+            null,
             null,
             "Updated title",
             "Updated description",
@@ -233,6 +237,7 @@ class TaskControllerTest {
         new TaskResponse(
             50L,
             10L,
+            null,
             null,
             "Finish task",
             "Complete task through controller",

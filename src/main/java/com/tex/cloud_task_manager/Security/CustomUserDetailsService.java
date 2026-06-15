@@ -12,23 +12,21 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-  private final UserEntityRepository userEntityRepository;
+    private final UserEntityRepository userEntityRepository;
 
-  @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-    var user =
-        userEntityRepository
-            .findByEmail(username)
-            .orElseThrow(
-                () ->
-                    new UsernameNotFoundException(
-                        "User not found with email: %s".formatted(username)));
+        var user = userEntityRepository
+                .findByEmail(username)
+                .orElseThrow(
+                        () -> new UsernameNotFoundException(
+                                "User not found with email: %s".formatted(username)));
 
-    return User.builder()
-        .username(user.getEmail())
-        .password(user.getPassword())
-        .roles("USER")
-        .build();
-  }
+        return User.builder()
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .roles(user.getAccountType())
+                .build();
+    }
 }

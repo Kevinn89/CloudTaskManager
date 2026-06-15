@@ -2,6 +2,7 @@ package com.tex.cloud_task_manager.Project;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -58,6 +59,7 @@ class ProjectControllerTest {
                 1L,
                 1L,
                 10L,
+                null,
                 "Build auth",
                 "JWT login and refresh token",
                 TaskStatus.TODO,
@@ -117,6 +119,7 @@ class ProjectControllerTest {
                 1L,
                 1L,
                 10L,
+                null,
                 "Build auth",
                 "JWT login and refresh token",
                 TaskStatus.TODO,
@@ -132,6 +135,7 @@ class ProjectControllerTest {
                 2L,
                 2L,
                 10L,
+                null,
                 "Build homepage",
                 "Create portfolio homepage",
                 TaskStatus.IN_PROGRESS,
@@ -208,6 +212,7 @@ class ProjectControllerTest {
                 1L,
                 1L,
                 10L,
+                null,
                 "Build auth",
                 "JWT login and refresh token",
                 TaskStatus.TODO,
@@ -256,7 +261,8 @@ class ProjectControllerTest {
   @Test
   void updateProjectShouldReturnOkAndCallProjectService() throws Exception {
     UpdateProjectRequest request =
-        new UpdateProjectRequest(1L, "Updated Project Name", "Updated project description");
+        new UpdateProjectRequest(
+            1L, "Updated Project Name", "Updated project description", null, null);
 
     List<TaskResponse> tasks =
         List.of(
@@ -264,6 +270,7 @@ class ProjectControllerTest {
                 1L,
                 1L,
                 10L,
+                null,
                 "Build auth",
                 "JWT login and refresh token",
                 TaskStatus.TODO,
@@ -285,7 +292,8 @@ class ProjectControllerTest {
             ProjectPriority.LOW,
             tasks);
 
-    when(projectService.updateProject(1L, "Updated Project Name", "Updated project description"))
+    when(projectService.updateProject(
+            1L, "Updated Project Name", "Updated project description", null, null))
         .thenReturn(serviceResponse);
 
     mockMvc
@@ -311,14 +319,15 @@ class ProjectControllerTest {
         .andExpect(jsonPath("$.tasks[0].taskStatus").value("TODO"))
         .andExpect(jsonPath("$.tasks[0].priority").value("LOW"));
 
-    verify(projectService).updateProject(anyLong(), anyString(), anyString());
+    verify(projectService).updateProject(anyLong(), anyString(), anyString(), isNull(), isNull());
   }
 
   @Test
   void updateProjectShouldReturnBadRequestWhenNameExceedsMaxLength() throws Exception {
     String longName = "A".repeat(101);
 
-    UpdateProjectRequest request = new UpdateProjectRequest(1L, longName, "Valid description");
+    UpdateProjectRequest request =
+        new UpdateProjectRequest(1L, longName, "Valid description", null, null);
 
     mockMvc
         .perform(
@@ -332,7 +341,8 @@ class ProjectControllerTest {
   void updateProjectShouldReturnBadRequestWhenDescriptionExceedsMaxLength() throws Exception {
     String longDescription = "A".repeat(501);
 
-    UpdateProjectRequest request = new UpdateProjectRequest(1L, "Valid Name", longDescription);
+    UpdateProjectRequest request =
+        new UpdateProjectRequest(1L, "Valid Name", longDescription, null, null);
 
     mockMvc
         .perform(
@@ -343,52 +353,10 @@ class ProjectControllerTest {
   }
 
   @Test
-  void deleteProjectShouldReturnOkAndCallProjectService() throws Exception {
-    List<TaskResponse> tasks =
-        List.of(
-            new TaskResponse(
-                1L,
-                1L,
-                10L,
-                "Build auth",
-                "JWT login and refresh token",
-                TaskStatus.ARCHIVED,
-                TaskPriority.LOW,
-                LocalDate.parse("2026-05-14"),
-                null,
-                LocalDateTime.parse("2026-05-07T10:35:00"),
-                null));
-
-    ProjectResponse serviceResponse =
-        new ProjectResponse(
-            1L,
-            "Deleted Project",
-            "Deleted project description",
-            tasks.size(),
-            LocalDateTime.parse("2026-05-07T10:30:00"),
-            LocalDateTime.parse("2026-05-07T12:00:00"),
-            ProjectStatus.DELETED,
-            ProjectPriority.LOW,
-            tasks);
-
-    when(projectService.deleteProject(1L)).thenReturn(serviceResponse);
-
+  void deleteProjectShouldReturnNoContentAndCallProjectServiceWithPathVariable() throws Exception {
     mockMvc
         .perform(delete("/api/project/{projectId}", 1L))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(1))
-        .andExpect(jsonPath("$.name").value("Deleted Project"))
-        .andExpect(jsonPath("$.description").value("Deleted project description"))
-        .andExpect(jsonPath("$.taskCount").value(1))
-        .andExpect(jsonPath("$.status").value("DELETED"))
-        .andExpect(jsonPath("$.priority").value("LOW"))
-        .andExpect(jsonPath("$.tasks[0].id").value(1))
-        .andExpect(jsonPath("$.tasks[0].projectId").value(1))
-        .andExpect(jsonPath("$.tasks[0].userId").value(10))
-        .andExpect(jsonPath("$.tasks[0].title").value("Build auth"))
-        .andExpect(jsonPath("$.tasks[0].description").value("JWT login and refresh token"))
-        .andExpect(jsonPath("$.tasks[0].taskStatus").value("ARCHIVED"))
-        .andExpect(jsonPath("$.tasks[0].priority").value("LOW"));
+        .andExpect(status().isNoContent());
 
     verify(projectService).deleteProject(1L);
   }

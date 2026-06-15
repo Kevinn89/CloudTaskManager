@@ -1,12 +1,13 @@
 package com.tex.cloud_task_manager.User;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,4 +41,8 @@ public class UserEntity {
 
   @Column(nullable = true)
   private LocalDateTime updatedAt;
+
+  @Column(name = "accountType", nullable = true)
+  private String accountType;
+
 }

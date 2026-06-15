@@ -29,7 +29,7 @@ class CustomUserDetailsServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void loadUserByUsernameShouldReturnUserDetailsWhenUserExists() {
     // Arrange
-    UserEntity savedUser = userService.createUser("Kevin", "kevin@test.com", "encoded-password");
+    UserEntity savedUser = userService.createUser("Kevin", "kevin@test.com", "encoded-password", "USER");
 
     // Act
     UserDetails userDetails = customUserDetailsService.loadUserByUsername("kevin@test.com");

@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         SPRING_PROFILES_ACTIVE = 'test'
-        DOCKER_REGISTRY = 'localhost:5001'
+        DOCKER_REGISTRY = 'registry:5001'
         DOCKER_IMAGE = 'cloud-task-manager'
     }
 

@@ -34,6 +34,7 @@ public class CustomUserDetailServiceTest {
             .name("Kevin")
             .email("test@example.com")
             .password("password123")
+            .accountType("ADMIN")
             .createdAt(LocalDateTime.now())
             .build();
   }
@@ -47,6 +48,7 @@ public class CustomUserDetailServiceTest {
 
     assertEquals(userDetails.getPassword(), "password123");
     assertEquals(userDetails.getUsername(), "test@example.com");
+    assertEquals("ROLE_ADMIN", userDetails.getAuthorities().iterator().next().getAuthority());
   }
 
   @Test

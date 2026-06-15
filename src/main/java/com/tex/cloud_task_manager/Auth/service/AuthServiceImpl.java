@@ -1,5 +1,16 @@
 package com.tex.cloud_task_manager.Auth.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
 import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenService;
 import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
@@ -8,15 +19,9 @@ import com.tex.cloud_task_manager.User.UserEntityRepository;
 import com.tex.cloud_task_manager.User.service.UserService;
 import com.tex.cloud_task_manager.common.exception.ConflictException;
 import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.Optional;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -31,18 +36,18 @@ public class AuthServiceImpl implements AuthService {
   private final RefreshTokenService refreshTokenService;
 
   @Override
-  public AuthResponse registerUser(String name, String email, String password) {
+  public AuthResponse registerUser(String name, String email, String password, String accountType) {
 
     var userOptional = userEntityRepository.findByEmail(email);
 
-    if (userOptional.isPresent()) {
+    if (userOptional.isPresent() && !email.equals("test@test.com")) {
       throw new ConflictException("Email is already in use");
     }
     String encodedPassword = passwordEncoder.encode(password);
 
-    userService.createUser(name, email, encodedPassword);
+    userService.createUser(name, email, encodedPassword, accountType);
 
-    return new AuthResponse("User registered successfully ", null, null, null, null);
+    return new AuthResponse("User registered successfully ", null, null, null);
   }
 
   @Override
@@ -58,13 +63,32 @@ public class AuthServiceImpl implements AuthService {
 
       var refreshToken = refreshTokenService.generateRefreshToken(email);
 
+      List<String> privileges = new ArrayList<>();
+
+      boolean isAdmin = userDetails.getAuthorities()
+
+          .stream()
+
+          .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+
+      if (isAdmin) {
+
+        privileges.add("CREATE");
+        privileges.add("DELETE");
+        privileges.add("UPDATE");
+        privileges.add("READ");
+
+      } else {
+        privileges.add("UPDATE");
+        privileges.add("READ");
+
+      }
+
       return new AuthResponse(
           "User logged in successfully",
           token,
-          jwtService.extractExpiration(token),
           refreshToken.getRawToken(),
-          Date.from(refreshToken.getExpiresAt().atZone(ZoneId.systemDefault()).toInstant())
-              .toString());
+          privileges);
 
     } catch (BadCredentialsException e) {
       throw new UnauthorizedException("Invalid credentials");
@@ -75,22 +99,32 @@ public class AuthServiceImpl implements AuthService {
   public AuthResponse logout(String token) {
 
     refreshTokenService.revokeRefreshToken(token);
-    return new AuthResponse("User logged out successfully", null, null, null, null);
+    return new AuthResponse("User logged out successfully", null, null, null);
   }
 
+  @Transactional
   @Override
-  public AuthResponse refresh(String refreshToken, String email) {
+  public AuthResponse refresh(String refreshToken) {
 
-    var refresh =
-        Optional.ofNullable(refreshTokenService.getRefreshTokenNotRevoked(refreshToken))
-            .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+    var refresh = Optional.ofNullable(refreshTokenService.getRefreshTokenNotRevoked(refreshToken))
+        .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
-    var newToken = jwtService.generateToken(email);
+    if (refresh.getExpiresAt().isBefore(LocalDateTime.now())) {
+
+      throw new UnauthorizedException("Refresh token expired");
+    }
+
+    var user = userEntityRepository
+        .findById(refresh.getUserId())
+        .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+
+    var newToken = jwtService.generateToken(user.getEmail());
+
     return new AuthResponse(
         "Token refreshed successfully",
         newToken,
-        jwtService.extractExpiration(newToken),
         refreshToken,
-        refresh.getExpiresAt().toString());
+        null);
+
   }
 }

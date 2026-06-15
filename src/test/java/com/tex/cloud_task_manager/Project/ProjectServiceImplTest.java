@@ -2,6 +2,7 @@ package com.tex.cloud_task_manager.Project;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -79,7 +80,7 @@ class ProjectServiceImplTest {
     assertEquals(10L, savedProject.getUserId());
     assertEquals("Project One", savedProject.getName());
     assertEquals("Project One Description", savedProject.getDescription());
-    assertEquals(ProjectStatus.ACTIVE, savedProject.getStatus());
+    assertEquals(ProjectStatus.NOT_ACTIVE, savedProject.getStatus());
     assertEquals(ProjectPriority.LOW, savedProject.getPriority());
     assertNotNull(savedProject.getCreatedAt());
 
@@ -87,7 +88,7 @@ class ProjectServiceImplTest {
     assertEquals("Project One", response.name());
     assertEquals("Project One Description", response.description());
     assertEquals(0, response.taskCount());
-    assertEquals(ProjectStatus.ACTIVE, response.status());
+    assertEquals(ProjectStatus.NOT_ACTIVE, response.status());
   }
 
   @Test
@@ -163,7 +164,7 @@ class ProjectServiceImplTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     ProjectResponse response =
-        projectService.updateProject(1L, "Updated Project", "Updated Description");
+        projectService.updateProject(1L, "Updated Project", "Updated Description", null, null);
 
     assertEquals(1L, response.id());
     assertEquals("Updated Project", response.name());
@@ -190,7 +191,7 @@ class ProjectServiceImplTest {
     when(projectRepository.save(any(ProjectEntity.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
-    ProjectResponse response = projectService.updateProject(1L, null, "   ");
+    ProjectResponse response = projectService.updateProject(1L, null, "   ", null, null);
 
     assertEquals(1L, response.id());
     assertEquals("Project One", response.name());
@@ -210,6 +211,73 @@ class ProjectServiceImplTest {
   }
 
   @Test
+  void updateProjectShouldMarkCompletedAtWhenMovingFromActiveToCompleted() {
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(projectRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(project));
+    when(projectRepository.save(any(ProjectEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    ProjectResponse response =
+        projectService.updateProject(1L, null, null, null, ProjectStatus.COMPLETED.name());
+
+    assertEquals(ProjectStatus.COMPLETED, response.status());
+    assertNotNull(project.getCompletedAt());
+  }
+
+  @Test
+  void updateProjectShouldClearCompletedAtWhenMovingFromCompletedToActive() {
+    project.setStatus(ProjectStatus.COMPLETED);
+    project.setCompletedAt(LocalDateTime.now());
+
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(projectRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(project));
+    when(projectRepository.save(any(ProjectEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    ProjectResponse response =
+        projectService.updateProject(1L, null, null, null, ProjectStatus.ACTIVE.name());
+
+    assertEquals(ProjectStatus.ACTIVE, response.status());
+    assertNull(project.getCompletedAt());
+  }
+
+  @Test
+  void updateProjectShouldRejectSkippingActiveWhenProjectIsNotActive() {
+    project.setStatus(ProjectStatus.NOT_ACTIVE);
+
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(projectRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(project));
+
+    BadRequestException exception =
+        assertThrows(
+            BadRequestException.class,
+            () ->
+                projectService.updateProject(
+                    1L, null, null, null, ProjectStatus.COMPLETED.name()));
+
+    assertEquals(
+        "Unable to move to NOT_ACTIVE from COMPLETED, to be ACTIVE first",
+        exception.getMessage());
+    verify(projectRepository, never()).save(any());
+  }
+
+  @Test
+  void updateProjectShouldSaveWhenStatusIsUnchanged() {
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(projectRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(project));
+    when(projectRepository.save(any(ProjectEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    ProjectResponse response =
+        projectService.updateProject(1L, null, null, null, ProjectStatus.ACTIVE.name());
+
+    assertEquals(ProjectStatus.ACTIVE, response.status());
+    assertEquals(ProjectStatus.ACTIVE, project.getStatus());
+    assertNotNull(project.getUpdatedAt());
+    verify(projectRepository).save(project);
+  }
+
+  @Test
   void updateProjectShouldNotSaveWhenProjectDoesNotBelongToCurrentUser() {
     when(currentUserService.getCurrentUserId()).thenReturn(20L);
     when(projectRepository.findByIdAndUserId(1L, 20L)).thenReturn(Optional.empty());
@@ -217,7 +285,7 @@ class ProjectServiceImplTest {
     RuntimeException exception =
         assertThrows(
             RuntimeException.class,
-            () -> projectService.updateProject(1L, "Bad Update", "Bad Description"));
+            () -> projectService.updateProject(1L, "Bad Update", "Bad Description", null, null));
 
     assertEquals("Project not found with id: 1", exception.getMessage());
 
@@ -231,11 +299,7 @@ class ProjectServiceImplTest {
     when(currentUserService.getCurrentUserId()).thenReturn(10L);
     when(projectRepository.findByIdAndUserId(1L, 10L)).thenReturn(Optional.of(project));
 
-    ProjectResponse response = projectService.deleteProject(1L);
-
-    assertEquals(1L, response.id());
-    assertEquals("Project One", response.name());
-    assertEquals(0, response.taskCount());
+    projectService.deleteProject(1L);
 
     verify(projectRepository).findByIdAndUserId(1L, 10L);
     verify(projectRepository).delete(project);

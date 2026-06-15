@@ -37,7 +37,7 @@ class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void generateRefreshTokenShouldPersistRefreshTokenWhenUserExists() {
     // Arrange
-    UserEntity user = userService.createUser("Kevin", "kevin@test.com", "encoded-password");
+    UserEntity user = userService.createUser("Kevin", "kevin@test.com", "encoded-password", "USER");
 
     // Act
     RefreshTokenEntity refreshToken = refreshTokenService.generateRefreshToken("kevin@test.com");
@@ -83,7 +83,7 @@ class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void revokeRefreshTokenShouldMarkTokenAsRevoked() {
     // Arrange
-    userService.createUser("Kevin", "kevin@test.com", "encoded-password");
+    userService.createUser("Kevin", "kevin@test.com", "encoded-password", "USER");
 
     RefreshTokenEntity generatedToken = refreshTokenService.generateRefreshToken("kevin@test.com");
 
@@ -110,7 +110,7 @@ class RefreshTokenServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void getRefreshTokenNotRevokedShouldThrowAfterTokenIsRevoked() {
     // Arrange
-    userService.createUser("Kevin", "kevin@test.com", "encoded-password");
+    userService.createUser("Kevin", "kevin@test.com", "encoded-password", "USER");
 
     RefreshTokenEntity generatedToken = refreshTokenService.generateRefreshToken("kevin@test.com");
 

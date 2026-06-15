@@ -7,6 +7,7 @@ import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 import com.tex.cloud_task_manager.Security.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +73,7 @@ class JwtAuthFilterTest {
   }
 
   @Test
-  void doFilterInternalShouldContinueFilterChainWhenAuthorizationHeaderIsMissing()
+  void doFilterInternalShouldContinueFilterChainWhenAccessTokenCookieIsMissing()
       throws ServletException, IOException {
 
     MockHttpServletRequest request = new MockHttpServletRequest();
@@ -87,11 +88,11 @@ class JwtAuthFilterTest {
   }
 
   @Test
-  void doFilterInternalShouldContinueFilterChainWhenAuthorizationHeaderIsNotBearer()
+  void doFilterInternalShouldIgnoreAuthorizationHeaderWhenAccessTokenCookieIsMissing()
       throws ServletException, IOException {
 
     MockHttpServletRequest request = new MockHttpServletRequest();
-    request.addHeader("Authorization", "Basic abc123");
+    request.addHeader("Authorization", "Bearer abc123");
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -104,14 +105,14 @@ class JwtAuthFilterTest {
   }
 
   @Test
-  void doFilterInternalShouldSetAuthenticationWhenBearerTokenIsValid()
+  void doFilterInternalShouldSetAuthenticationWhenAccessTokenCookieIsValid()
       throws ServletException, IOException {
 
     String token = "valid-jwt-token";
     String email = "kevin@test.com";
 
     MockHttpServletRequest request = new MockHttpServletRequest();
-    request.addHeader("Authorization", "Bearer " + token);
+    request.setCookies(new Cookie("access_token", token));
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -150,7 +151,7 @@ class JwtAuthFilterTest {
     String email = "kevin@test.com";
 
     MockHttpServletRequest request = new MockHttpServletRequest();
-    request.addHeader("Authorization", "Bearer " + token);
+    request.setCookies(new Cookie("access_token", token));
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -194,7 +195,7 @@ class JwtAuthFilterTest {
     SecurityContextHolder.getContext().setAuthentication(existingAuth);
 
     MockHttpServletRequest request = new MockHttpServletRequest();
-    request.addHeader("Authorization", "Bearer " + token);
+    request.setCookies(new Cookie("access_token", token));
 
     MockHttpServletResponse response = new MockHttpServletResponse();
 
