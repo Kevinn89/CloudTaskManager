@@ -172,8 +172,8 @@ services:
       EMAIL_QUEUE: email.queue
       MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
       MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME:-mitchell.kevinn@gmail.com}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-viej zdbw bnxr kbhk}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
       MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-true}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.com}
