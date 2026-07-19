@@ -40,9 +40,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
   @Override
   protected void doFilterInternal(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      FilterChain filterChain) throws ServletException, IOException {
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws ServletException, IOException {
 
     String token = getTokenFromCookie(request);
 
@@ -59,10 +58,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         var userDetails = userDetailsService.loadUserByUsername(email);
 
         if (jwtService.isTokenValid(token, userDetails)) {
-          var authToken = new UsernamePasswordAuthenticationToken(
-              userDetails,
-              null,
-              userDetails.getAuthorities());
+          var authToken =
+              new UsernamePasswordAuthenticationToken(
+                  userDetails, null, userDetails.getAuthorities());
 
           authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
@@ -73,7 +71,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     } catch (Exception ex) {
 
       System.out.print(ex.getMessage());
-
     }
 
     filterChain.doFilter(request, response);

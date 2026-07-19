@@ -1,7 +1,18 @@
 server:
-  port: 8081
+  port: 8084
 
 spring:
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/cloud_task_manager}
     driver-class-name: org.postgresql.Driver
@@ -14,10 +25,25 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: create
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
         jdbc:
           time_zone: UTC
+
+app:
+  seed:
+    enabled: true
+  rabbitmq:
+    user-notification-exchange: ${APP_RABBITMQ_USER_NOTIFICATION_EXCHANGE:user.notifications}
+    user-registered-queue: ${APP_RABBITMQ_USER_REGISTERED_QUEUE:user.registered.notifications}
+    user-registered-routing-key: ${APP_RABBITMQ_USER_REGISTERED_ROUTING_KEY:user.registered}
+
+logging:
+  level:
+    root: info
+    org.springframework: info
+    org.hibernate.SQL: info
+    org.hibernate.orm.jdbc.bind: info

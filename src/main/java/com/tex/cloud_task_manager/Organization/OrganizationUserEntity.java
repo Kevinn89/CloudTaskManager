@@ -19,22 +19,23 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "organization_user", uniqueConstraints = {
-
-        @UniqueConstraint(name = "uk_organization_user", columnNames = { "org_id", "user_id" })
-})
-
+@Table(
+    name = "organization_user",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_organization_user",
+          columnNames = {"org_id", "user_id"})
+    })
 public class OrganizationUserEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    // @SequenceGenerator(name = "organizationuserentity_sequence", sequenceName =
-    // "organizationuserentity_sequence", allocationSize = 100)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.SEQUENCE)
+  // @SequenceGenerator(name = "organizationuserentity_sequence", sequenceName =
+  // "organizationuserentity_sequence", allocationSize = 100)
+  private Long id;
 
-    @Column(name = "org_id", nullable = false)
-    private Long orgId;
+  @Column(name = "org_id", nullable = false)
+  private Long orgId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
+  @Column(name = "user_id", nullable = false)
+  private Long userId;
 }

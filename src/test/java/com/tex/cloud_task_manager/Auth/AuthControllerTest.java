@@ -90,7 +90,7 @@ class AuthControllerTest {
             "User logged in successfully",
             "jwt-token",
             "refresh-token",
-            List.of("UPDATE", "READ"));
+            List.of(Privilege.UPDATE, Privilege.READ));
 
     when(authService.loginUser("kevin@test.com", "Password123!")).thenReturn(serviceResponse);
 
@@ -100,12 +100,16 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
-        .andExpect(result -> assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
-            .anySatisfy(header -> assertThat(header).contains("access_token=jwt-token"))
-            .anySatisfy(header -> assertThat(header).contains("refresh_token=refresh-token")))
+        .andExpect(
+            result ->
+                assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
+                    .anySatisfy(header -> assertThat(header).contains("access_token=jwt-token"))
+                    .anySatisfy(
+                        header -> assertThat(header).contains("refresh_token=refresh-token")))
         .andExpect(jsonPath("$.message").value("Successfully Login"))
         .andExpect(jsonPath("$.token").isEmpty())
         .andExpect(jsonPath("$.refreshToken").isEmpty())
+        .andExpect(jsonPath("$.errorCode").doesNotExist())
         .andExpect(jsonPath("$.privileges[0]").value("UPDATE"))
         .andExpect(jsonPath("$.privileges[1]").value("READ"));
 
@@ -115,18 +119,15 @@ class AuthControllerTest {
   @Test
   void refreshShouldSetNewAccessTokenCookieWhenRefreshCookieExists() throws Exception {
     AuthResponse serviceResponse =
-        new AuthResponse(
-            "Token refreshed successfully",
-            "new-jwt-token",
-            "refresh-token",
-            null);
+        new AuthResponse("Token refreshed successfully", "new-jwt-token", "refresh-token", null);
 
     when(authService.refresh("refresh-token")).thenReturn(serviceResponse);
 
     mockMvc
         .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", "refresh-token")))
         .andExpect(status().isNoContent())
-        .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("access_token=new-jwt-token")));
+        .andExpect(
+            header().string(HttpHeaders.SET_COOKIE, containsString("access_token=new-jwt-token")));
 
     verify(authService).refresh("refresh-token");
   }
@@ -146,9 +147,15 @@ class AuthControllerTest {
     mockMvc
         .perform(post("/api/auth/logout").cookie(new Cookie("refresh_token", "refresh-token")))
         .andExpect(status().isNoContent())
-        .andExpect(result -> assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
-            .anySatisfy(header -> assertThat(header).contains("access_token=").contains("Max-Age=0"))
-            .anySatisfy(header -> assertThat(header).contains("refresh_token=").contains("Max-Age=0")));
+        .andExpect(
+            result ->
+                assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
+                    .anySatisfy(
+                        header ->
+                            assertThat(header).contains("access_token=").contains("Max-Age=0"))
+                    .anySatisfy(
+                        header ->
+                            assertThat(header).contains("refresh_token=").contains("Max-Age=0")));
 
     verify(authService).logout("refresh-token");
   }

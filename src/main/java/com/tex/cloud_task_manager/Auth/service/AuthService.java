@@ -12,4 +12,5 @@ public interface AuthService {
 
   AuthResponse refresh(String refreshToken);
 
+  void userVerifed(String email, String instantRepresentation);
 }

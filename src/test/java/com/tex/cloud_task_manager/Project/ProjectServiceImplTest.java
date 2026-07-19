@@ -252,12 +252,10 @@ class ProjectServiceImplTest {
         assertThrows(
             BadRequestException.class,
             () ->
-                projectService.updateProject(
-                    1L, null, null, null, ProjectStatus.COMPLETED.name()));
+                projectService.updateProject(1L, null, null, null, ProjectStatus.COMPLETED.name()));
 
     assertEquals(
-        "Unable to move to NOT_ACTIVE from COMPLETED, to be ACTIVE first",
-        exception.getMessage());
+        "Unable to move to NOT_ACTIVE from COMPLETED, to be ACTIVE first", exception.getMessage());
     verify(projectRepository, never()).save(any());
   }
 

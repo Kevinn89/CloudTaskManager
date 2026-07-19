@@ -11,6 +11,7 @@ import com.tex.cloud_task_manager.RefreshToken.RefreshTokenRepository;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 import jakarta.servlet.http.Cookie;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -100,17 +101,14 @@ class OrganizationControllerIntegrationTest extends AbstractWebIntegrationTest {
 
     mockMvc
         .perform(
-            get("/api/organization/{orgId}", orgId)
-                .cookie(new Cookie("access_token", memberToken)))
+            get("/api/organization/{orgId}", orgId).cookie(new Cookie("access_token", memberToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(orgId))
         .andExpect(jsonPath("$.name").value("Team Org"))
         .andExpect(jsonPath("$.memberCount").value(2));
 
     mockMvc
-        .perform(
-            get("/api/organization/user-orgs")
-                .cookie(new Cookie("access_token", memberToken)))
+        .perform(get("/api/organization/user-orgs").cookie(new Cookie("access_token", memberToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(1))
         .andExpect(jsonPath("$[0].id").value(orgId))
@@ -135,8 +133,7 @@ class OrganizationControllerIntegrationTest extends AbstractWebIntegrationTest {
     createOrganization(outsiderToken, "Outsider Org", "Owned by another user");
 
     mockMvc
-        .perform(
-            get("/api/organization/admin-orgs").cookie(new Cookie("access_token", ownerToken)))
+        .perform(get("/api/organization/admin-orgs").cookie(new Cookie("access_token", ownerToken)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(1))
         .andExpect(jsonPath("$[0].id").value(ownerOrgId))
@@ -187,6 +184,10 @@ class OrganizationControllerIntegrationTest extends AbstractWebIntegrationTest {
                     """
                         .formatted(name, email, password, accountType)))
         .andExpect(status().isOk());
+
+    var user = userEntityRepository.findByEmail(email).orElseThrow();
+    user.setVerifiedAt(Instant.now());
+    userEntityRepository.save(user);
   }
 
   private String loginAndExtractAccessToken(String email, String password) throws Exception {
@@ -206,7 +207,8 @@ class OrganizationControllerIntegrationTest extends AbstractWebIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    return extractCookieValue(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE), "access_token");
+    return extractCookieValue(
+        result.getResponse().getHeaders(HttpHeaders.SET_COOKIE), "access_token");
   }
 
   private static String extractCookieValue(List<String> setCookieHeaders, String cookieName) {

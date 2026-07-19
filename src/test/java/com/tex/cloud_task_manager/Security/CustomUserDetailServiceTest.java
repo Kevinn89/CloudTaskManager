@@ -6,6 +6,8 @@ import static org.mockito.Mockito.when;
 
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
+import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,7 @@ public class CustomUserDetailServiceTest {
             .password("password123")
             .accountType("ADMIN")
             .createdAt(LocalDateTime.now())
+            .verifiedAt(Instant.now())
             .build();
   }
 
@@ -62,5 +65,18 @@ public class CustomUserDetailServiceTest {
             () -> customService.loadUserByUsername("test@example.com"));
 
     assertEquals("User not found with email: test@example.com", exception.getMessage());
+  }
+
+  @Test
+  public void testLoadUserByUsername_UserNotVerified() {
+    userEntity.setVerifiedAt(null);
+    when(userEntityRepository.findByEmail("test@example.com")).thenReturn(Optional.of(userEntity));
+
+    UnauthorizedException exception =
+        assertThrows(
+            UnauthorizedException.class,
+            () -> customService.loadUserByUsername("test@example.com"));
+
+    assertEquals("User not verified for : test@example.com", exception.getMessage());
   }
 }

@@ -354,9 +354,7 @@ class ProjectControllerTest {
 
   @Test
   void deleteProjectShouldReturnNoContentAndCallProjectServiceWithPathVariable() throws Exception {
-    mockMvc
-        .perform(delete("/api/project/{projectId}", 1L))
-        .andExpect(status().isNoContent());
+    mockMvc.perform(delete("/api/project/{projectId}", 1L)).andExpect(status().isNoContent());
 
     verify(projectService).deleteProject(1L);
   }

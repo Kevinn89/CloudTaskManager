@@ -13,6 +13,8 @@ import static org.mockito.Mockito.when;
 
 import com.tex.cloud_task_manager.Auth.response_request.AuthResponse;
 import com.tex.cloud_task_manager.Auth.service.AuthServiceImpl;
+import com.tex.cloud_task_manager.Notification.UserRegisteredMessage;
+import com.tex.cloud_task_manager.Notification.UserRegistrationNotificationPublisher;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenEntity;
 import com.tex.cloud_task_manager.RefreshToken.service.RefreshTokenService;
 import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
@@ -21,13 +23,16 @@ import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 import com.tex.cloud_task_manager.User.service.UserService;
 import com.tex.cloud_task_manager.common.exception.ConflictException;
+import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -53,6 +58,8 @@ class AuthServiceTest {
   @Mock private JwtService jwtService;
 
   @Mock private RefreshTokenService refreshTokenService;
+
+  @Mock private UserRegistrationNotificationPublisher userRegistrationNotificationPublisher;
 
   @InjectMocks private AuthServiceImpl authService;
 
@@ -95,7 +102,8 @@ class AuthServiceTest {
         .thenReturn(userEntity);
 
     // Act
-    AuthResponse response = authService.registerUser("Kevin", "test@example.com", "password123", "USER");
+    AuthResponse response =
+        authService.registerUser("Kevin", "test@example.com", "password123", "USER");
 
     // Assert
     assertEquals("User registered successfully ", response.message());
@@ -107,6 +115,17 @@ class AuthServiceTest {
     verify(passwordEncoder).encode("password123");
     verify(userService).createUser("Kevin", "test@example.com", "encoded-password", "USER");
 
+    ArgumentCaptor<UserRegisteredMessage> messageCaptor =
+        ArgumentCaptor.forClass(UserRegisteredMessage.class);
+    verify(userRegistrationNotificationPublisher).publish(messageCaptor.capture());
+    UserRegisteredMessage message = messageCaptor.getValue();
+    assertEquals(1L, message.userId());
+    assertEquals("Kevin", message.name());
+    assertEquals("test@example.com", message.email());
+    assertEquals("USER", message.accountType());
+    assertInstanceOf(java.util.UUID.class, message.messageId());
+    assertNull(message.traceId());
+
     verifyNoInteractions(authenticationManager);
     verifyNoInteractions(jwtService);
     verifyNoInteractions(refreshTokenService);
@@ -117,13 +136,15 @@ class AuthServiceTest {
     // Arrange
     when(userEntityRepository.findByEmail("test@example.com")).thenReturn(Optional.of(userEntity));
 
-    assertThatThrownBy(() -> authService.registerUser("Kevin", "test@example.com", "password123", "USER"))
+    assertThatThrownBy(
+            () -> authService.registerUser("Kevin", "test@example.com", "password123", "USER"))
         .isInstanceOf(ConflictException.class)
         .hasMessageContaining("Email is already in use");
 
     verify(userEntityRepository).findByEmail("test@example.com");
     verify(userService, never()).createUser(anyString(), anyString(), anyString(), anyString());
     verify(passwordEncoder, never()).encode(anyString());
+    verifyNoInteractions(userRegistrationNotificationPublisher);
 
     verifyNoInteractions(authenticationManager);
     verifyNoInteractions(jwtService);
@@ -159,7 +180,7 @@ class AuthServiceTest {
     assertEquals("User logged in successfully", response.message());
     assertEquals(jwtToken, response.token());
     assertEquals("raw-refresh-token", response.refreshToken());
-    assertEquals(List.of("UPDATE", "READ"), response.privileges());
+    assertEquals(List.of(Privilege.UPDATE, Privilege.READ), response.privileges());
 
     verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
     verify(customUserDetailsService).loadUserByUsername(email);
@@ -190,7 +211,9 @@ class AuthServiceTest {
     AuthResponse response = authService.loginUser(email, password);
 
     // Assert
-    assertEquals(List.of("CREATE", "DELETE", "UPDATE", "READ"), response.privileges());
+    assertEquals(
+        List.of(Privilege.CREATE, Privilege.DELETE, Privilege.UPDATE, Privilege.READ),
+        response.privileges());
   }
 
   @Test
@@ -238,6 +261,32 @@ class AuthServiceTest {
     verifyNoInteractions(authenticationManager);
     verifyNoInteractions(passwordEncoder);
     verifyNoInteractions(jwtService);
+  }
+
+  @Test
+  void userVerifedShouldSaveVerificationInstant() {
+    String email = "test@example.com";
+    String instantRepresentation = "2026-07-13T15:30:00Z";
+    when(userEntityRepository.findByEmail(email)).thenReturn(Optional.of(userEntity));
+
+    authService.userVerifed(email, instantRepresentation);
+
+    assertEquals(Instant.parse(instantRepresentation), userEntity.getVerifiedAt());
+    verify(userEntityRepository).findByEmail(email);
+    verify(userEntityRepository).save(userEntity);
+  }
+
+  @Test
+  void userVerifedShouldThrowWhenUserDoesNotExist() {
+    String email = "missing@example.com";
+    when(userEntityRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> authService.userVerifed(email, "2026-07-13T15:30:00Z"))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining(email);
+
+    verify(userEntityRepository).findByEmail(email);
+    verify(userEntityRepository, never()).save(any(UserEntity.class));
   }
 
   @Test

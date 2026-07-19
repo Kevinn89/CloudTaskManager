@@ -45,8 +45,12 @@ public class ProjectController {
   public ResponseEntity<ProjectResponse> updateProject(
       @Valid @RequestBody UpdateProjectRequest request) {
     return ResponseEntity.ok(
-        projectService.updateProject(request.projectId(), request.name(), request.description(),
-            request.priorityStatus(), request.projectStatus()));
+        projectService.updateProject(
+            request.projectId(),
+            request.name(),
+            request.description(),
+            request.priorityStatus(),
+            request.projectStatus()));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")

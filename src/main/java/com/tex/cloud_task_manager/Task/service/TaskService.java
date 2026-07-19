@@ -1,6 +1,5 @@
 package com.tex.cloud_task_manager.Task.service;
 
-import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
 import java.util.List;
 
@@ -23,5 +22,4 @@ public interface TaskService {
       String priority);
 
   TaskResponse assignUserTask(long taskId, long userId, long projectId);
-
 }

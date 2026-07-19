@@ -3,7 +3,6 @@ package com.tex.cloud_task_manager.Config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.tex.cloud_task_manager.AbstractWebIntegrationTest;
@@ -12,6 +11,7 @@ import com.tex.cloud_task_manager.Security.JwtService;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 import com.tex.cloud_task_manager.User.service.UserService;
 import jakarta.servlet.http.Cookie;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,9 @@ class JwtAuthFilterIntegrationTest extends AbstractWebIntegrationTest {
   void protectedEndpointShouldAllowRequestWithValidAccessTokenCookie() throws Exception {
     String email = "kevin@test.com";
 
-    userService.createUser("Kevin", email, "encoded-password", "USER");
+    var user = userService.createUser("Kevin", email, "encoded-password", "USER");
+    user.setVerifiedAt(Instant.now());
+    userEntityRepository.save(user);
 
     assertThat(userEntityRepository.findByEmail(email)).isPresent();
 
@@ -95,10 +97,12 @@ class JwtAuthFilterIntegrationTest extends AbstractWebIntegrationTest {
 
     mockMvc
         .perform(
-            post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+            post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(requestBody))
         .andExpect(status().isOk());
+
+    var user = userEntityRepository.findByEmail("kevin@test.com").orElseThrow();
+    user.setVerifiedAt(Instant.now());
+    userEntityRepository.save(user);
   }
 
   private String loginAndExtractRefreshToken() throws Exception {
@@ -113,9 +117,7 @@ class JwtAuthFilterIntegrationTest extends AbstractWebIntegrationTest {
     var result =
         mockMvc
             .perform(
-                post("/api/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(loginBody))
+                post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginBody))
             .andExpect(status().isOk())
             .andReturn();
 

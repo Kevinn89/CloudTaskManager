@@ -17,6 +17,7 @@ import com.tex.cloud_task_manager.RefreshToken.RefreshTokenRepository;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 import jakarta.servlet.http.Cookie;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -420,7 +421,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     assertThat(taskRepository.findById(otherUserTask.getId())).isPresent();
   }
 
-  private void registerUser(String name, String email, String password, String accountType) throws Exception {
+  private void registerUser(String name, String email, String password, String accountType)
+      throws Exception {
     mockMvc
         .perform(
             post("/api/auth/register")
@@ -436,6 +438,10 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                                 """
                         .formatted(name, email, password, accountType)))
         .andExpect(status().isOk());
+
+    var user = userEntityRepository.findByEmail(email).orElseThrow();
+    user.setVerifiedAt(Instant.now());
+    userEntityRepository.save(user);
   }
 
   private String loginAndExtractAccessToken(String email, String password) throws Exception {
@@ -455,7 +461,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    return extractCookieValue(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE), "access_token");
+    return extractCookieValue(
+        result.getResponse().getHeaders(HttpHeaders.SET_COOKIE), "access_token");
   }
 
   private static String extractCookieValue(List<String> setCookieHeaders, String cookieName) {

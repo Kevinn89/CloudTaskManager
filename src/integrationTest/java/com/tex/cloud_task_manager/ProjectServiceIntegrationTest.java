@@ -26,249 +26,259 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
-    @Autowired
-    private ProjectService projectService;
+  @Autowired private ProjectService projectService;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+  @Autowired private ProjectRepository projectRepository;
 
-    @Autowired
-    private TaskRepository taskRepository;
+  @Autowired private TaskRepository taskRepository;
 
-    @MockitoBean
-    private CurrentUserService currentUserService;
+  @MockitoBean private CurrentUserService currentUserService;
 
-    @BeforeEach
-    void setUp() {
-        taskRepository.deleteAll();
-        projectRepository.deleteAll();
-    }
+  @BeforeEach
+  void setUp() {
+    taskRepository.deleteAll();
+    projectRepository.deleteAll();
+  }
 
-    @Test
-    void createProjectShouldPersistProjectWithCurrentUserId() {
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
+  @Test
+  void createProjectShouldPersistProjectWithCurrentUserId() {
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
-        ProjectResponse response = projectService.createProject("Integration Project", "Integration Description");
+    ProjectResponse response =
+        projectService.createProject("Integration Project", "Integration Description");
 
-        assertNotNull(response.id());
-        assertEquals("Integration Project", response.name());
-        assertEquals("Integration Description", response.description());
-        assertEquals(ProjectStatus.NOT_ACTIVE, response.status());
+    assertNotNull(response.id());
+    assertEquals("Integration Project", response.name());
+    assertEquals("Integration Description", response.description());
+    assertEquals(ProjectStatus.NOT_ACTIVE, response.status());
 
-        ProjectEntity savedProject = projectRepository.findById(response.id()).orElseThrow();
+    ProjectEntity savedProject = projectRepository.findById(response.id()).orElseThrow();
 
-        assertEquals(10L, savedProject.getUserId());
-        assertEquals("Integration Project", savedProject.getName());
-        assertEquals("Integration Description", savedProject.getDescription());
-        assertEquals(ProjectStatus.NOT_ACTIVE, savedProject.getStatus());
-        assertNotNull(savedProject.getCreatedAt());
-    }
+    assertEquals(10L, savedProject.getUserId());
+    assertEquals("Integration Project", savedProject.getName());
+    assertEquals("Integration Description", savedProject.getDescription());
+    assertEquals(ProjectStatus.NOT_ACTIVE, savedProject.getStatus());
+    assertNotNull(savedProject.getCreatedAt());
+  }
 
-    @Test
-    void getUserProjectsShouldReturnOnlyCurrentUsersProjects() {
+  @Test
+  void getUserProjectsShouldReturnOnlyCurrentUsersProjects() {
+    projectRepository.save(
+        ProjectEntity.builder()
+            .userId(10L)
+            .name("User Ten Project One")
+            .description("Owned by user ten")
+            .createdAt(LocalDateTime.now())
+            .status(ProjectStatus.ACTIVE)
+            .build());
+
+    projectRepository.save(
+        ProjectEntity.builder()
+            .userId(10L)
+            .name("User Ten Project Two")
+            .description("Also owned by user ten")
+            .createdAt(LocalDateTime.now())
+            .status(ProjectStatus.ACTIVE)
+            .build());
+
+    projectRepository.save(
+        ProjectEntity.builder()
+            .userId(20L)
+            .name("User Twenty Project")
+            .description("Should not be returned")
+            .createdAt(LocalDateTime.now())
+            .status(ProjectStatus.ACTIVE)
+            .build());
+
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+
+    List<ProjectResponse> responses = projectService.getUserProjects();
+
+    assertEquals(2, responses.size());
+
+    List<String> names = responses.stream().map(ProjectResponse::name).toList();
+
+    assertTrue(names.contains("User Ten Project One"));
+    assertTrue(names.contains("User Ten Project Two"));
+    assertFalse(names.contains("User Twenty Project"));
+  }
+
+  @Test
+  void getProjectShouldReturnProjectWhenOwnedByCurrentUser() {
+    ProjectEntity savedProject =
         projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(10L)
-                        .name("User Ten Project One")
-                        .description("Owned by user ten")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
+            ProjectEntity.builder()
+                .userId(10L)
+                .name("Owned Project")
+                .description("Current user owns this")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
 
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+
+    ProjectResponse response = projectService.getProject(savedProject.getId());
+
+    assertEquals(savedProject.getId(), response.id());
+    assertEquals("Owned Project", response.name());
+    assertEquals("Current user owns this", response.description());
+  }
+
+  @Test
+  void getProjectShouldThrowWhenProjectBelongsToAnotherUser() {
+    ProjectEntity otherUsersProject =
         projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(10L)
-                        .name("User Ten Project Two")
-                        .description("Also owned by user ten")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
+            ProjectEntity.builder()
+                .userId(20L)
+                .name("Other User Project")
+                .description("Current user should not access this")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
 
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class, () -> projectService.getProject(otherUsersProject.getId()));
+
+    assertEquals(
+        "Project not found with id: %d".formatted(otherUsersProject.getId()),
+        exception.getMessage());
+  }
+
+  @Test
+  void updateProjectShouldUpdateOnlyWhenOwnedByCurrentUser() {
+    ProjectEntity savedProject =
         projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(20L)
-                        .name("User Twenty Project")
-                        .description("Should not be returned")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
+            ProjectEntity.builder()
+                .userId(10L)
+                .name("Old Name")
+                .description("Old Description")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
 
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
-        List<ProjectResponse> responses = projectService.getUserProjects();
+    ProjectResponse response =
+        projectService.updateProject(
+            savedProject.getId(), "New Name", "New Description", null, null);
 
-        assertEquals(2, responses.size());
+    assertEquals("New Name", response.name());
+    assertEquals("New Description", response.description());
 
-        List<String> names = responses.stream().map(ProjectResponse::name).toList();
+    ProjectEntity updatedProject = projectRepository.findById(savedProject.getId()).orElseThrow();
 
-        assertTrue(names.contains("User Ten Project One"));
-        assertTrue(names.contains("User Ten Project Two"));
-        assertFalse(names.contains("User Twenty Project"));
-    }
+    assertEquals(10L, updatedProject.getUserId());
+    assertEquals("New Name", updatedProject.getName());
+    assertEquals("New Description", updatedProject.getDescription());
+  }
 
-    @Test
-    void getProjectShouldReturnProjectWhenOwnedByCurrentUser() {
-        ProjectEntity savedProject = projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(10L)
-                        .name("Owned Project")
-                        .description("Current user owns this")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
+  @Test
+  void updateProjectShouldThrowAndNotUpdateWhenProjectBelongsToAnotherUser() {
+    ProjectEntity otherUsersProject =
+        projectRepository.save(
+            ProjectEntity.builder()
+                .userId(20L)
+                .name("Original Name")
+                .description("Original Description")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
 
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
-        ProjectResponse response = projectService.getProject(savedProject.getId());
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class,
+            () ->
+                projectService.updateProject(
+                    otherUsersProject.getId(), "Hacked Name", "Hacked Description", null, null));
 
-        assertEquals(savedProject.getId(), response.id());
-        assertEquals("Owned Project", response.name());
-        assertEquals("Current user owns this", response.description());
-    }
+    assertEquals(
+        "Project not found with id: %d".formatted(otherUsersProject.getId()),
+        exception.getMessage());
 
-    @Test
-    void getProjectShouldThrowWhenProjectBelongsToAnotherUser() {
-        ProjectEntity otherUsersProject = projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(20L)
-                        .name("Other User Project")
-                        .description("Current user should not access this")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
+    ProjectEntity unchangedProject =
+        projectRepository.findById(otherUsersProject.getId()).orElseThrow();
 
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    assertEquals("Original Name", unchangedProject.getName());
+    assertEquals("Original Description", unchangedProject.getDescription());
+  }
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class, () -> projectService.getProject(otherUsersProject.getId()));
+  @Test
+  void deleteProjectShouldDeleteOnlyWhenOwnedByCurrentUser() {
+    ProjectEntity savedProject =
+        projectRepository.save(
+            ProjectEntity.builder()
+                .userId(10L)
+                .name("Delete Me")
+                .description("Current user owns this")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
 
-        assertEquals(
-                "Project not found with id: %d".formatted(otherUsersProject.getId()),
-                exception.getMessage());
-    }
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
-    @Test
-    void updateProjectShouldUpdateOnlyWhenOwnedByCurrentUser() {
-        ProjectEntity savedProject = projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(10L)
-                        .name("Old Name")
-                        .description("Old Description")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
+    projectService.deleteProject(savedProject.getId());
 
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
+    assertFalse(projectRepository.findById(savedProject.getId()).isPresent());
+  }
 
-        ProjectResponse response = projectService.updateProject(savedProject.getId(), "New Name", "New Description",
-                null, null);
+  @Test
+  void deleteProjectShouldDeleteProjectTasks() {
+    ProjectEntity savedProject =
+        projectRepository.save(
+            ProjectEntity.builder()
+                .userId(10L)
+                .name("Delete Project With Tasks")
+                .description("Current user owns this")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
 
-        assertEquals("New Name", response.name());
-        assertEquals("New Description", response.description());
+    taskRepository.save(
+        TaskEntity.builder()
+            .project(savedProject)
+            .userId(10L)
+            .title("Task to delete")
+            .description("Deleted with project")
+            .createdAt(LocalDateTime.now())
+            .priority(TaskPriority.LOW)
+            .taskStatus(TaskStatus.TODO)
+            .build());
 
-        ProjectEntity updatedProject = projectRepository.findById(savedProject.getId()).orElseThrow();
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
-        assertEquals(10L, updatedProject.getUserId());
-        assertEquals("New Name", updatedProject.getName());
-        assertEquals("New Description", updatedProject.getDescription());
-    }
+    projectService.deleteProject(savedProject.getId());
 
-    @Test
-    void updateProjectShouldThrowAndNotUpdateWhenProjectBelongsToAnotherUser() {
-        ProjectEntity otherUsersProject = projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(20L)
-                        .name("Original Name")
-                        .description("Original Description")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
+    assertFalse(projectRepository.findById(savedProject.getId()).isPresent());
+    assertTrue(taskRepository.findAll().isEmpty());
+  }
 
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
+  @Test
+  void deleteProjectShouldThrowAndNotDeleteWhenProjectBelongsToAnotherUser() {
+    ProjectEntity otherUsersProject =
+        projectRepository.save(
+            ProjectEntity.builder()
+                .userId(20L)
+                .name("Do Not Delete")
+                .description("Current user does not own this")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> projectService.updateProject(
-                        otherUsersProject.getId(), "Hacked Name", "Hacked Description", null, null));
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
-        assertEquals(
-                "Project not found with id: %d".formatted(otherUsersProject.getId()),
-                exception.getMessage());
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class, () -> projectService.deleteProject(otherUsersProject.getId()));
 
-        ProjectEntity unchangedProject = projectRepository.findById(otherUsersProject.getId()).orElseThrow();
+    assertEquals(
+        "Project not found with id: %d".formatted(otherUsersProject.getId()),
+        exception.getMessage());
 
-        assertEquals("Original Name", unchangedProject.getName());
-        assertEquals("Original Description", unchangedProject.getDescription());
-    }
-
-    @Test
-    void deleteProjectShouldDeleteOnlyWhenOwnedByCurrentUser() {
-        ProjectEntity savedProject = projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(10L)
-                        .name("Delete Me")
-                        .description("Current user owns this")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
-
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
-
-        projectService.deleteProject(savedProject.getId());
-
-        assertFalse(projectRepository.findById(savedProject.getId()).isPresent());
-    }
-
-    @Test
-    void deleteProjectShouldDeleteProjectTasks() {
-        ProjectEntity savedProject = projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(10L)
-                        .name("Delete Project With Tasks")
-                        .description("Current user owns this")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
-
-        taskRepository.save(
-                TaskEntity.builder()
-                        .project(savedProject)
-                        .userId(10L)
-                        .title("Task to delete")
-                        .description("Deleted with project")
-                        .createdAt(LocalDateTime.now())
-                        .priority(TaskPriority.LOW)
-                        .taskStatus(TaskStatus.TODO)
-                        .build());
-
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
-
-        projectService.deleteProject(savedProject.getId());
-
-        assertFalse(projectRepository.findById(savedProject.getId()).isPresent());
-        assertTrue(taskRepository.findAll().isEmpty());
-    }
-
-    @Test
-    void deleteProjectShouldThrowAndNotDeleteWhenProjectBelongsToAnotherUser() {
-        ProjectEntity otherUsersProject = projectRepository.save(
-                ProjectEntity.builder()
-                        .userId(20L)
-                        .name("Do Not Delete")
-                        .description("Current user does not own this")
-                        .createdAt(LocalDateTime.now())
-                        .status(ProjectStatus.ACTIVE)
-                        .build());
-
-        when(currentUserService.getCurrentUserId()).thenReturn(10L);
-
-        RuntimeException exception = assertThrows(
-                RuntimeException.class, () -> projectService.deleteProject(otherUsersProject.getId()));
-
-        assertEquals(
-                "Project not found with id: %d".formatted(otherUsersProject.getId()),
-                exception.getMessage());
-
-        assertTrue(projectRepository.findById(otherUsersProject.getId()).isPresent());
-    }
+    assertTrue(projectRepository.findById(otherUsersProject.getId()).isPresent());
+  }
 }

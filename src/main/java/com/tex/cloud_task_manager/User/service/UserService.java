@@ -13,5 +13,4 @@ public interface UserService {
   UserResponse updateUser(String name, String password);
 
   List<UserResponse> getNonOrgUsers(Long orgId);
-
 }

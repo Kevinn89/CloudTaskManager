@@ -2,7 +2,6 @@ package com.tex.cloud_task_manager.User;
 
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +12,8 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, Long> {
 
   Optional<UserEntity> findByEmail(String email);
 
-  @Query("""
+  @Query(
+      """
 
           select u
           from UserEntity u
@@ -25,5 +25,4 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, Long> {
           )
       """)
   List<UserEntity> findUsersNotInOrganization(@Param("orgId") Long orgId);
-
 }

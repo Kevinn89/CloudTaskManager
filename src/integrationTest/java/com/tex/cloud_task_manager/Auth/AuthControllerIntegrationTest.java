@@ -13,6 +13,7 @@ import com.tex.cloud_task_manager.User.UserEntityRepository;
 import jakarta.servlet.http.Cookie;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,11 +142,12 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
     String refreshToken = loginAndExtractRefreshToken();
 
     mockMvc
-        .perform(
-            post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+        .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
         .andExpect(status().isNoContent())
-        .andExpect(result -> assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
-            .anySatisfy(header -> assertThat(header).contains("access_token=")));
+        .andExpect(
+            result ->
+                assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
+                    .anySatisfy(header -> assertThat(header).contains("access_token=")));
 
     RefreshTokenEntity savedToken =
         refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), false);
@@ -162,12 +164,17 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
     String refreshToken = loginAndExtractRefreshToken();
 
     mockMvc
-        .perform(
-            post("/api/auth/logout").cookie(new Cookie("refresh_token", refreshToken)))
+        .perform(post("/api/auth/logout").cookie(new Cookie("refresh_token", refreshToken)))
         .andExpect(status().isNoContent())
-        .andExpect(result -> assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
-            .anySatisfy(header -> assertThat(header).contains("access_token=").contains("Max-Age=0"))
-            .anySatisfy(header -> assertThat(header).contains("refresh_token=").contains("Max-Age=0")));
+        .andExpect(
+            result ->
+                assertThat(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
+                    .anySatisfy(
+                        header ->
+                            assertThat(header).contains("access_token=").contains("Max-Age=0"))
+                    .anySatisfy(
+                        header ->
+                            assertThat(header).contains("refresh_token=").contains("Max-Age=0")));
 
     RefreshTokenEntity revokedToken =
         refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), true);
@@ -184,13 +191,11 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
     String refreshToken = loginAndExtractRefreshToken();
 
     mockMvc
-        .perform(
-            post("/api/auth/logout").cookie(new Cookie("refresh_token", refreshToken)))
+        .perform(post("/api/auth/logout").cookie(new Cookie("refresh_token", refreshToken)))
         .andExpect(status().isNoContent());
 
     mockMvc
-        .perform(
-            post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
+        .perform(post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)))
         .andExpect(status().isUnauthorized());
   }
 
@@ -209,6 +214,10 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
         .perform(
             post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(requestBody))
         .andExpect(status().isOk());
+
+    UserEntity user = userEntityRepository.findByEmail("kevin@test.com").orElseThrow();
+    user.setVerifiedAt(Instant.now());
+    userEntityRepository.save(user);
   }
 
   private String loginAndExtractRefreshToken() throws Exception {
@@ -227,7 +236,8 @@ class AuthControllerIntegrationTest extends AbstractWebIntegrationTest {
             .andExpect(status().isOk())
             .andReturn();
 
-    return extractCookieValue(result.getResponse().getHeaders(HttpHeaders.SET_COOKIE), "refresh_token");
+    return extractCookieValue(
+        result.getResponse().getHeaders(HttpHeaders.SET_COOKIE), "refresh_token");
   }
 
   private static String extractCookieValue(List<String> setCookieHeaders, String cookieName) {
