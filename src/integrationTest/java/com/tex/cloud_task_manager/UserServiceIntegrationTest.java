@@ -26,13 +26,15 @@ class UserServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void createUserShouldPersistUserToDatabase() {
     // Act
-    UserEntity createdUser = userService.createUser("Kevin", "kevin@test.com", "encoded-password");
+    UserEntity createdUser =
+        userService.createUser("Kevin", "kevin@test.com", "encoded-password", "USER");
 
     // Assert
     assertThat(createdUser.getId()).isNotNull();
     assertThat(createdUser.getName()).isEqualTo("Kevin");
     assertThat(createdUser.getEmail()).isEqualTo("kevin@test.com");
     assertThat(createdUser.getPassword()).isEqualTo("encoded-password");
+    assertThat(createdUser.getAccountType()).isEqualTo("USER");
     assertThat(createdUser.getCreatedAt()).isNotNull();
     assertThat(createdUser.getUpdatedAt()).isNull();
 
@@ -45,8 +47,8 @@ class UserServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void getAllUsersShouldReturnAllPersistedUsers() {
     // Arrange
-    userService.createUser("Kevin", "kevin@test.com", "password-one");
-    userService.createUser("Alex", "alex@test.com", "password-two");
+    userService.createUser("Kevin", "kevin@test.com", "password-one", "USER");
+    userService.createUser("Alex", "alex@test.com", "password-two", "ADMIN");
 
     // Act
     var users = userService.getAllUsers();
@@ -60,7 +62,8 @@ class UserServiceIntegrationTest extends AbstractIntegrationTest {
   @WithMockUser(username = "kevin@test.com")
   void updateUserShouldPersistChangesForCurrentUser() {
     // Arrange
-    UserEntity createdUser = userService.createUser("Kevin", "kevin@test.com", "old-password");
+    UserEntity createdUser =
+        userService.createUser("Kevin", "kevin@test.com", "old-password", "USER");
 
     // Act
     UserResponse response = userService.updateUser("Kevin Updated", "new-password");

@@ -9,9 +9,10 @@ public interface ProjectService {
 
   List<ProjectResponse> getUserProjects();
 
-  ProjectResponse deleteProject(long projectId);
+  void deleteProject(long projectId);
 
-  ProjectResponse updateProject(long projectId, String name, String description);
+  ProjectResponse updateProject(
+      long projectId, String name, String description, String priority, String status);
 
   ProjectResponse getProject(long projectId);
 

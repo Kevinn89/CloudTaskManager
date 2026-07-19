@@ -9,6 +9,8 @@ import com.tex.cloud_task_manager.Security.JwtService;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 import com.tex.cloud_task_manager.User.service.UserService;
+import jakarta.servlet.http.Cookie;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,10 @@ class UserControllerIntegrationTest extends AbstractWebIntegrationTest {
   @Test
   void updateUserShouldPersistChangesForAuthenticatedUser() throws Exception {
     // Arrange
-    UserEntity createdUser = userService.createUser("Kevin", "kevin@test.com", "old-password");
+    UserEntity createdUser =
+        userService.createUser("Kevin", "kevin@test.com", "old-password", "USER");
+    createdUser.setVerifiedAt(Instant.now());
+    userEntityRepository.save(createdUser);
 
     UserDetails userDetails =
         org.springframework.security.core.userdetails.User.withUsername("kevin@test.com")
@@ -55,8 +60,8 @@ class UserControllerIntegrationTest extends AbstractWebIntegrationTest {
     // Act + Assert
     mockMvc
         .perform(
-            put("/update")
-                .header("Authorization", "Bearer " + token)
+            put("/api/user/update")
+                .cookie(new Cookie("access_token", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
         .andExpect(status().isOk())

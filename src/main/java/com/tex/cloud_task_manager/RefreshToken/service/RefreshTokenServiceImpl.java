@@ -14,10 +14,12 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
   private final RefreshTokenRepository refreshTokenRepository;
@@ -27,18 +29,22 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
   @Transactional
   @Override
   public void revokeRefreshToken(String token) {
+    log.debug("Revoking refresh token");
 
     String tokenHash = generateHashfromToken(token);
 
     int rowsUpdated =
         refreshTokenRepository.revokeActiveTokensByTokenHash(tokenHash, LocalDateTime.now());
     if (rowsUpdated == 0) {
+      log.warn("Refresh token revocation rejected because no active token matched");
       throw new UnauthorizedException("Invalid refresh token");
     }
+    log.info("Refresh token revoked successfully");
   }
 
   @Override
   public RefreshTokenEntity getRefreshTokenNotRevoked(String token) {
+    log.debug("Retrieving active refresh token");
 
     String tokenHash = generateHashfromToken(token);
 
@@ -46,11 +52,14 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         Optional.ofNullable(refreshTokenRepository.findByTokenHashAndRevoked(tokenHash, false))
             .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
-    return saveRefreshTokenEntity(refreshTokenOptional);
+    RefreshTokenEntity refreshToken = saveRefreshTokenEntity(refreshTokenOptional);
+    log.debug("Active refresh token retrieved for userId={}", refreshToken.getUserId());
+    return refreshToken;
   }
 
   @Override
   public RefreshTokenEntity generateRefreshToken(String email) {
+    log.debug("Generating refresh token");
 
     var userOptional =
         userEntityRepository
@@ -75,7 +84,9 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             .revoked(false)
             .build();
 
-    return saveRefreshTokenEntity(refreshToken);
+    RefreshTokenEntity savedToken = saveRefreshTokenEntity(refreshToken);
+    log.info("Refresh token generated successfully for userId={}", userOptional.getId());
+    return savedToken;
   }
 
   private String generateSecureRandomToken() {

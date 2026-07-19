@@ -6,6 +6,20 @@ spring:
   application:
     name: cloud-task-manager
 
+  cache:
+    type: redis
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
   profiles:
     active: local
 
@@ -36,5 +50,9 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET}
-    access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:30}
+    access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:1}
     refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:7}
+  rabbitmq:
+    user-notification-exchange: ${APP_RABBITMQ_USER_NOTIFICATION_EXCHANGE:user.notifications}
+    user-registered-queue: ${APP_RABBITMQ_USER_REGISTERED_QUEUE:user.registered.notifications}
+    user-registered-routing-key: ${APP_RABBITMQ_USER_REGISTERED_ROUTING_KEY:user.registered}

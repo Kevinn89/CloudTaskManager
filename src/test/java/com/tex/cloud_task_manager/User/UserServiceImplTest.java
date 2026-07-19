@@ -33,6 +33,7 @@ class UserServiceImplTest {
     String name = "Kevin";
     String email = "kevin@test.com";
     String password = "Password123!";
+    String accountType = "USER";
 
     UserEntity savedUser =
         UserEntity.builder()
@@ -40,6 +41,7 @@ class UserServiceImplTest {
             .name(name)
             .email(email)
             .password(password)
+            .accountType(accountType)
             .createdAt(LocalDateTime.now())
             .updatedAt(null)
             .build();
@@ -47,7 +49,7 @@ class UserServiceImplTest {
     when(userEntityRepository.save(any(UserEntity.class))).thenReturn(savedUser);
 
     // Act
-    UserEntity result = userService.createUser(name, email, password);
+    UserEntity result = userService.createUser(name, email, password, accountType);
 
     // Assert
     assertThat(result).isNotNull();
@@ -55,6 +57,7 @@ class UserServiceImplTest {
     assertThat(result.getName()).isEqualTo(name);
     assertThat(result.getEmail()).isEqualTo(email);
     assertThat(result.getPassword()).isEqualTo(password);
+    assertThat(result.getAccountType()).isEqualTo(accountType);
 
     verify(userEntityRepository).save(any(UserEntity.class));
   }
@@ -68,7 +71,7 @@ class UserServiceImplTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     // Act
-    userService.createUser("Kevin", "kevin@test.com", "Password123!");
+    userService.createUser("Kevin", "kevin@test.com", "Password123!", "ADMIN");
 
     // Assert
     verify(userEntityRepository).save(userCaptor.capture());
@@ -77,6 +80,7 @@ class UserServiceImplTest {
 
     assertThat(capturedUser.getCreatedAt()).isNotNull();
     assertThat(capturedUser.getUpdatedAt()).isNull();
+    assertThat(capturedUser.getAccountType()).isEqualTo("ADMIN");
   }
 
   @Test

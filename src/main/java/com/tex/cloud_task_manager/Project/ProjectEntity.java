@@ -1,6 +1,7 @@
 package com.tex.cloud_task_manager.Project;
 
 import com.tex.cloud_task_manager.Task.TaskEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -46,14 +47,22 @@ public class ProjectEntity {
   @Column(name = "updated_at", nullable = true)
   private LocalDateTime updatedAt;
 
+  @Column(name = "completion_at", nullable = true)
+  private LocalDateTime completedAt;
+
   @Column(name = "status", nullable = false)
-  private ProjectStatus status;
+  @Builder.Default
+  private ProjectStatus status = ProjectStatus.NOT_ACTIVE;
 
   @Column(name = "priority", nullable = false)
   @Builder.Default
   private ProjectPriority priority = ProjectPriority.LOW;
 
-  @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
+  @OneToMany(
+      mappedBy = "project",
+      fetch = FetchType.LAZY,
+      cascade = CascadeType.REMOVE,
+      orphanRemoval = true)
   @Builder.Default
   private List<TaskEntity> tasks = new ArrayList<>();
 }

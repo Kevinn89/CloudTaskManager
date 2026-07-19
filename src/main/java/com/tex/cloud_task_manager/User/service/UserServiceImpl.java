@@ -8,10 +8,14 @@ import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
 
   private final UserEntityRepository userEntityRepository;
@@ -19,7 +23,9 @@ public class UserServiceImpl implements UserService {
   private final CurrentUserService currentUserService;
 
   @Override
-  public UserEntity createUser(String name, String email, String password) {
+  @CacheEvict(cacheNames = "allUsers", allEntries = true)
+  public UserEntity createUser(String name, String email, String password, String accountType) {
+    log.debug("Creating user with account type {}", accountType);
     UserEntity user =
         UserEntity.builder()
             .name(name)
@@ -27,19 +33,28 @@ public class UserServiceImpl implements UserService {
             .password(password)
             .createdAt(LocalDateTime.now())
             .updatedAt(null)
+            .accountType(accountType)
             .build();
-    return userEntityRepository.save(user);
+    UserEntity savedUser = userEntityRepository.save(user);
+    log.info("User created successfully with userId={}", savedUser.getId());
+    return savedUser;
   }
 
   @Override
+  @Cacheable(cacheNames = "allUsers")
   public List<UserResponse> getAllUsers() {
-    return userEntityRepository.findAll().stream().map(UserResponse::from).toList();
+    List<UserResponse> users =
+        userEntityRepository.findAll().stream().map(UserResponse::from).toList();
+    log.debug("Retrieved {} users", users.size());
+    return users;
   }
 
   @Override
+  @CacheEvict(cacheNames = "allUsers", allEntries = true)
   public UserResponse updateUser(String name, String password) {
 
     long userId = getCurrentUserId();
+    log.debug("Updating user with userId={}", userId);
 
     UserEntity userEntity =
         userEntityRepository
@@ -53,10 +68,26 @@ public class UserServiceImpl implements UserService {
 
     userEntity.setUpdatedAt(LocalDateTime.now());
 
-    return UserResponse.from(userEntityRepository.save(userEntity));
+    UserResponse response = UserResponse.from(userEntityRepository.save(userEntity));
+    log.info("User updated successfully with userId={}", userId);
+    return response;
   }
 
   private long getCurrentUserId() {
     return currentUserService.getCurrentUserId();
+  }
+
+  @Override
+  @Cacheable(cacheNames = "nonOrgUsers", key = "#orgId")
+  public List<UserResponse> getNonOrgUsers(Long orgId) {
+    log.debug("Retrieving users outside organization with orgId={}", orgId);
+
+    List<UserResponse> orgLessUsers =
+        userEntityRepository.findUsersNotInOrganization(orgId).stream()
+            .map(UserResponse::from)
+            .toList();
+
+    log.debug("Retrieved {} users outside organization with orgId={}", orgLessUsers.size(), orgId);
+    return orgLessUsers;
   }
 }

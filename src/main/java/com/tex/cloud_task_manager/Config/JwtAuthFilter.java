@@ -4,9 +4,11 @@ import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 import com.tex.cloud_task_manager.Security.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,14 +27,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getServletPath();
 
-    boolean skip =
-        path.startsWith("/api/auth/")
-            || path.startsWith("/h2-console")
-            || path.startsWith("/swagger-ui")
-            || path.startsWith("/v3/api-docs")
-            || path.equals("/swagger-ui.html");
+    if (path == null || path.isBlank()) {
+      path = request.getRequestURI();
+    }
 
-    return skip;
+    return path.startsWith("/api/auth/")
+        || path.startsWith("/h2-console")
+        || path.startsWith("/swagger-ui")
+        || path.startsWith("/v3/api-docs")
+        || path.equals("/swagger-ui.html");
   }
 
   @Override
@@ -40,30 +43,48 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
 
-    String authHeader = request.getHeader("Authorization");
+    String token = getTokenFromCookie(request);
 
-    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+    if (token == null || token.isBlank()) {
       filterChain.doFilter(request, response);
       return;
     }
 
-    String token = authHeader.substring(7);
-    String email = jwtService.extractUsername(token);
+    try {
 
-    if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      var userDetails = userDetailsService.loadUserByUsername(email);
+      String email = jwtService.extractUsername(token);
 
-      if (jwtService.isTokenValid(token, userDetails)) {
-        var authToken =
-            new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities());
+      if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        var userDetails = userDetailsService.loadUserByUsername(email);
 
-        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        if (jwtService.isTokenValid(token, userDetails)) {
+          var authToken =
+              new UsernamePasswordAuthenticationToken(
+                  userDetails, null, userDetails.getAuthorities());
 
-        SecurityContextHolder.getContext().setAuthentication(authToken);
+          authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+          SecurityContextHolder.getContext().setAuthentication(authToken);
+        }
       }
+
+    } catch (Exception ex) {
+
+      System.out.print(ex.getMessage());
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private String getTokenFromCookie(HttpServletRequest request) {
+    if (request.getCookies() == null) {
+      return null;
+    }
+
+    return Arrays.stream(request.getCookies())
+        .filter(cookie -> cookie.getName().equals("access_token"))
+        .map(Cookie::getValue)
+        .findFirst()
+        .orElse(null);
   }
 }

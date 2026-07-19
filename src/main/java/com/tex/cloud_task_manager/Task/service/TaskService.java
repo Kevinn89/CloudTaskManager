@@ -20,4 +20,6 @@ public interface TaskService {
       String dueDate,
       String completionDate,
       String priority);
+
+  TaskResponse assignUserTask(long taskId, long userId, long projectId);
 }

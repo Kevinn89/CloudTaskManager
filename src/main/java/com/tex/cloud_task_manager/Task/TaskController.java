@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,17 @@ public class TaskController {
 
   private final TaskService taskService;
 
+  // @PreAuthorize("hasAnyRole('ADMIN')")
+  // @PostMapping("/create")
+  // public ResponseEntity<TaskResponse> create(@Valid @RequestBody
+  // CreateTaskRequest request) {
+
+  // return ResponseEntity.status(HttpStatus.CREATED)
+  // .body(taskService.create(request.title(), request.description(),
+  // request.projectId()));
+  // }
+
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/create")
   public ResponseEntity<TaskResponse> create(@Valid @RequestBody CreateTaskRequest request) {
 
@@ -32,11 +44,13 @@ public class TaskController {
         .body(taskService.create(request.title(), request.description(), request.projectId()));
   }
 
+  @PreAuthorize("hasAnyRole( 'ADMIN','USER')")
   @GetMapping("/project/{projectId}")
-  public ResponseEntity<List<TaskResponse>> getTasks(@PathVariable long projectId) {
+  public ResponseEntity<List<TaskResponse>> getTasks(@PathVariable("projectId") long projectId) {
     return ResponseEntity.ok(taskService.getTasks(projectId));
   }
 
+  @PreAuthorize("hasAnyRole( 'ADMIN','USER')")
   @PutMapping("/update")
   public ResponseEntity<TaskResponse> updateTask(@Valid @RequestBody UpdateTaskRequest request) {
     return ResponseEntity.ok(
@@ -51,9 +65,10 @@ public class TaskController {
             request.priority()));
   }
 
+  @PreAuthorize("hasAnyRole( 'ADMIN')")
   @DeleteMapping("/{taskId}/project/{projectId}")
   public ResponseEntity<TaskResponse> deleteTask(
-      @PathVariable long projectId, @PathVariable long taskId) {
+      @PathVariable("projectId") long projectId, @PathVariable("taskId") long taskId) {
 
     taskService.deleteTask(projectId, taskId);
 

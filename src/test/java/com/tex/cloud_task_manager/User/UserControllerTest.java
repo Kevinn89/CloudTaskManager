@@ -42,7 +42,7 @@ class UserControllerTest {
   void updateUserShouldReturnUpdatedUserResponse() throws Exception {
     // Arrange
     when(userService.updateUser("Kevin Updated", "NewPassword123!"))
-        .thenReturn(new UserResponse("Kevin Updated"));
+        .thenReturn(new UserResponse(1L, "Kevin Updated"));
 
     String requestBody =
         """
@@ -55,7 +55,7 @@ class UserControllerTest {
     // Act + Assert
     mockMvc
         .perform(
-            put("/update")
+            put("/api/user/update")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
                 .accept(MediaType.APPLICATION_JSON))
@@ -94,7 +94,7 @@ class UserControllerTest {
 
     // Act + Assert
     mockMvc
-        .perform(get("/allUsers").accept(MediaType.APPLICATION_JSON))
+        .perform(get("/api/user/allUsers").accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.length()").value(2))
@@ -111,7 +111,7 @@ class UserControllerTest {
 
     // Act + Assert
     mockMvc
-        .perform(get("/allUsers").accept(MediaType.APPLICATION_JSON))
+        .perform(get("/api/user/allUsers").accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.length()").value(0));

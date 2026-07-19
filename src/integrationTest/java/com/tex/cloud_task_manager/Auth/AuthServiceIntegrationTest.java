@@ -15,6 +15,7 @@ import com.tex.cloud_task_manager.common.exception.ConflictException;
 import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.HexFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,14 +42,13 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
   void registerUserShouldCreateUserWithEncodedPasswordWhenEmailDoesNotExist() {
     // Act
     AuthResponse response =
-        (AuthResponse) authService.registerUser("Kevin", "kevin@test.com", "Password123!");
+        authService.registerUser("Kevin", "kevin@test.com", "Password123!", "USER");
 
     // Assert response
     assertThat(response.message()).isEqualTo("User registered successfully ");
     assertThat(response.token()).isNull();
-    assertThat(response.tokenExpiration()).isNull();
     assertThat(response.refreshToken()).isNull();
-    assertThat(response.refreshTokenExpiration()).isNull();
+    assertThat(response.privileges()).isNull();
 
     // Assert database
     UserEntity savedUser = userEntityRepository.findByEmail("kevin@test.com").orElseThrow();
@@ -56,6 +56,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     assertThat(savedUser.getId()).isNotNull();
     assertThat(savedUser.getName()).isEqualTo("Kevin");
     assertThat(savedUser.getEmail()).isEqualTo("kevin@test.com");
+    assertThat(savedUser.getAccountType()).isEqualTo("USER");
     assertThat(savedUser.getCreatedAt()).isNotNull();
 
     assertThat(savedUser.getPassword()).isNotEqualTo("Password123!");
@@ -65,10 +66,12 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void registerUserShouldNotCreateUserWhenEmailAlreadyExists() {
 
-    authService.registerUser("Kevin", "kevin@test.com", "Password123!");
+    authService.registerUser("Kevin", "kevin@test.com", "Password123!", "USER");
 
     assertThatThrownBy(
-            () -> authService.registerUser("Kevin Again", "kevin@test.com", "AnotherPassword123!"))
+            () ->
+                authService.registerUser(
+                    "Kevin Again", "kevin@test.com", "AnotherPassword123!", "USER"))
         .isInstanceOf(ConflictException.class)
         .hasMessageContaining("Email is already in use");
 
@@ -86,7 +89,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void loginUserShouldReturnJwtAndRefreshTokenWhenCredentialsAreValid() {
     // Arrange
-    authService.registerUser("Kevin", "kevin@test.com", "Password123!");
+    registerVerifiedUser();
 
     // Act
     AuthResponse response = (AuthResponse) authService.loginUser("kevin@test.com", "Password123!");
@@ -94,9 +97,8 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     // Assert response
     assertThat(response.message()).isEqualTo("User logged in successfully");
     assertThat(response.token()).isNotBlank();
-    assertThat(response.tokenExpiration()).isNotNull();
     assertThat(response.refreshToken()).isNotBlank();
-    assertThat(response.refreshTokenExpiration()).isNotBlank();
+    assertThat(response.privileges()).containsExactly(Privilege.UPDATE, Privilege.READ);
 
     // Assert refresh token was persisted
     String tokenHash = sha256(response.refreshToken());
@@ -115,7 +117,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void loginUserShouldReturnInvalidCredentialsWhenPasswordIsWrong() {
     // Arrange
-    authService.registerUser("Kevin", "kevin@test.com", "Password123!");
+    registerVerifiedUser();
 
     assertThatThrownBy(() -> authService.loginUser("kevin@test.com", "WrongPassword123!"))
         .isInstanceOf(UnauthorizedException.class)
@@ -146,21 +148,20 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void refreshShouldReturnNewJwtWhenRefreshTokenIsValid() {
     // Arrange
-    authService.registerUser("Kevin", "kevin@test.com", "Password123!");
+    registerVerifiedUser();
 
     AuthResponse loginResponse = authService.loginUser("kevin@test.com", "Password123!");
 
     String refreshToken = loginResponse.refreshToken();
 
     // Act
-    AuthResponse refreshResponse = authService.refresh(refreshToken, "kevin@test.com");
+    AuthResponse refreshResponse = authService.refresh(refreshToken);
 
     // Assert
     assertThat(refreshResponse.message()).isEqualTo("Token refreshed successfully");
     assertThat(refreshResponse.token()).isNotBlank();
-    assertThat(refreshResponse.tokenExpiration()).isNotNull();
     assertThat(refreshResponse.refreshToken()).isEqualTo(refreshToken);
-    assertThat(refreshResponse.refreshTokenExpiration()).isNotBlank();
+    assertThat(refreshResponse.privileges()).isNull();
 
     RefreshTokenEntity savedRefreshToken =
         refreshTokenRepository.findByTokenHashAndRevoked(sha256(refreshToken), false);
@@ -171,7 +172,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void logoutShouldRevokeRefreshToken() {
     // Arrange
-    authService.registerUser("Kevin", "kevin@test.com", "Password123!");
+    registerVerifiedUser();
 
     AuthResponse loginResponse = authService.loginUser("kevin@test.com", "Password123!");
 
@@ -187,9 +188,8 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
 
     assertThat(authResponse.message()).isEqualTo("User logged out successfully");
     assertThat(authResponse.token()).isNull();
-    assertThat(authResponse.tokenExpiration()).isNull();
     assertThat(authResponse.refreshToken()).isNull();
-    assertThat(authResponse.refreshTokenExpiration()).isNull();
+    assertThat(authResponse.privileges()).isNull();
 
     // Assert database
     RefreshTokenEntity revokedToken =
@@ -203,7 +203,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void refreshShouldThrowUnauthorizedAfterLogout() {
     // Arrange
-    authService.registerUser("Kevin", "kevin@test.com", "Password123!");
+    registerVerifiedUser();
 
     AuthResponse loginResponse =
         (AuthResponse) authService.loginUser("kevin@test.com", "Password123!");
@@ -213,7 +213,7 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     authService.logout(refreshToken);
 
     // Act + Assert
-    assertThatThrownBy(() -> authService.refresh(refreshToken, "kevin@test.com"))
+    assertThatThrownBy(() -> authService.refresh(refreshToken))
         .isInstanceOf(UnauthorizedException.class)
         .hasMessageContaining("Invalid refresh token");
   }
@@ -223,6 +223,13 @@ class AuthServiceIntegrationTest extends AbstractIntegrationTest {
     assertThatThrownBy(() -> authService.logout("missing-refresh-token"))
         .isInstanceOf(UnauthorizedException.class)
         .hasMessageContaining("Invalid refresh token");
+  }
+
+  private void registerVerifiedUser() {
+    authService.registerUser("Kevin", "kevin@test.com", "Password123!", "USER");
+    UserEntity user = userEntityRepository.findByEmail("kevin@test.com").orElseThrow();
+    user.setVerifiedAt(Instant.now());
+    userEntityRepository.save(user);
   }
 
   private static String sha256(String token) {

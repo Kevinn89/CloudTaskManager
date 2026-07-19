@@ -38,7 +38,7 @@ public class TaskEntity {
   @Column(name = "title", nullable = false)
   private String title;
 
-  @Column(nullable = true)
+  @Column(nullable = false)
   private Long userId;
 
   @Column(name = "description")
@@ -59,6 +59,9 @@ public class TaskEntity {
   @Column(nullable = true)
   private LocalDate dueDate;
 
-  @Column(name = "project_priority", nullable = true)
+  @Column(name = "project_priority", nullable = false)
   private TaskPriority priority;
+
+  @Column(nullable = true)
+  private Long assignedUserid;
 }

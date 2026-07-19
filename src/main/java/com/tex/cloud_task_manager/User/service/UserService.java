@@ -6,9 +6,11 @@ import java.util.List;
 
 public interface UserService {
 
-  UserEntity createUser(String name, String email, String password);
+  UserEntity createUser(String name, String email, String password, String accountType);
 
   List<UserResponse> getAllUsers();
 
   UserResponse updateUser(String name, String password);
+
+  List<UserResponse> getNonOrgUsers(Long orgId);
 }

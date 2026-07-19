@@ -8,17 +8,21 @@ import com.tex.cloud_task_manager.Task.TaskRepository;
 import com.tex.cloud_task_manager.Task.TaskStatus;
 import com.tex.cloud_task_manager.Task.response_request.TaskResponse;
 import com.tex.cloud_task_manager.common.exception.BadRequestException;
-import com.tex.cloud_task_manager.common.exception.ConflictException;
 import com.tex.cloud_task_manager.common.exception.ResourceNotFoundException;
 import com.tex.cloud_task_manager.common.exception.UnauthorizedException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TaskServiceImpl implements TaskService {
 
   private final TaskRepository taskRepository;
@@ -31,9 +35,20 @@ public class TaskServiceImpl implements TaskService {
   }
 
   @Override
+  @Caching(
+      evict = {
+        @CacheEvict(
+            cacheNames = "tasksByProject",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(
+            cacheNames = "projectById",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(cacheNames = "userProjects", key = "@currentUserService.getCurrentUserId()")
+      })
   public TaskResponse create(String title, String description, long projectId) {
 
     long userId = getCurrentUserId();
+    log.debug("Creating task for projectId={} and userId={}", projectId, userId);
 
     var project =
         projectRepository
@@ -54,15 +69,23 @@ public class TaskServiceImpl implements TaskService {
             .createdAt(LocalDateTime.now())
             .build();
 
-    return TaskResponse.from(taskRepository.save(taskEntity));
+    TaskEntity savedTask = taskRepository.save(taskEntity);
+    log.info(
+        "Task created successfully with taskId={} for projectId={}", savedTask.getId(), projectId);
+    return TaskResponse.from(savedTask);
   }
 
   @Override
+  @Cacheable(
+      cacheNames = "tasksByProject",
+      key = "@currentUserService.getCurrentUserId() + ':' + #projectId")
   public List<TaskResponse> getTasks(long projectId) {
+    long userId = getCurrentUserId();
+    log.debug("Retrieving tasks for projectId={} and userId={}", projectId, userId);
 
     var project =
         projectRepository
-            .findByIdAndUserId(projectId, getCurrentUserId())
+            .findByIdAndUserId(projectId, userId)
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(
@@ -71,10 +94,21 @@ public class TaskServiceImpl implements TaskService {
     List<TaskEntity> taskEntity =
         taskRepository.findByProjectIdAndUserId(projectId, project.getUserId());
 
+    log.debug("Retrieved {} tasks for projectId={}", taskEntity.size(), projectId);
     return taskEntity.stream().map(TaskResponse::from).toList();
   }
 
   @Override
+  @Caching(
+      evict = {
+        @CacheEvict(
+            cacheNames = "tasksByProject",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(
+            cacheNames = "projectById",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(cacheNames = "userProjects", key = "@currentUserService.getCurrentUserId()")
+      })
   public TaskResponse updateTask(
       long taskId,
       long projectId,
@@ -84,10 +118,12 @@ public class TaskServiceImpl implements TaskService {
       String dueDate,
       String completionDate,
       String priority) {
+    long userId = getCurrentUserId();
+    log.debug("Updating taskId={} for projectId={} and userId={}", taskId, projectId, userId);
 
     var project =
         projectRepository
-            .findByIdAndUserId(projectId, getCurrentUserId())
+            .findByIdAndUserId(projectId, userId)
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(
@@ -104,27 +140,37 @@ public class TaskServiceImpl implements TaskService {
     if (description != null && !description.isBlank()) taskEntity.setDescription(description);
     if (dueDate != null && !dueDate.isBlank()) taskEntity.setDueDate(LocalDate.parse(dueDate));
     if (title != null && !title.isBlank()) taskEntity.setTitle(title);
-    if (taskStatus != null && !taskStatus.isBlank())
+    if (taskStatus != null
+        && !taskStatus.isBlank()
+        && !taskEntity.getTaskStatus().equals(TaskStatus.valueOf(taskStatus)))
       taskEntity = updateStatus(taskEntity, TaskStatus.valueOf(taskStatus));
     if (completionDate != null && !completionDate.isBlank())
       taskEntity.setCompletionDate(LocalDate.parse(completionDate));
-    if (priority != null && !priority.isBlank())
+    if (priority != null
+        && !priority.isBlank()
+        && !taskEntity.getPriority().equals(TaskPriority.valueOf(priority)))
       taskEntity.setPriority(TaskPriority.valueOf(priority));
     if (project != null) taskEntity.setProject(project);
 
-    return TaskResponse.from(taskRepository.save(taskEntity));
+    TaskEntity savedTask = taskRepository.save(taskEntity);
+    log.info("Task updated successfully with taskId={} for projectId={}", taskId, projectId);
+    return TaskResponse.from(savedTask);
   }
 
   private TaskEntity updateStatus(TaskEntity curreStatus, TaskStatus toStatus) {
 
     TaskStatus status = curreStatus.getTaskStatus();
-
-    if (status.equals(toStatus)) throw new ConflictException("TaskStatus unchanged");
+    log.debug("Changing taskId={} status from {} to {}", curreStatus.getId(), status, toStatus);
 
     switch (status) {
       case TaskStatus.TODO:
         if (TaskStatus.IN_PROGRESS.equals(toStatus)) status = toStatus;
         else {
+          log.warn(
+              "Rejected taskId={} status transition from {} to {}",
+              curreStatus.getId(),
+              status,
+              toStatus);
           throw new BadRequestException(
               "Unable to move to %s from %s".formatted(TaskStatus.IN_PROGRESS, status));
         }
@@ -134,10 +180,15 @@ public class TaskServiceImpl implements TaskService {
         status = toStatus;
         if (TaskStatus.TODO.equals(toStatus)) status = toStatus;
       case TaskStatus.DONE:
-        if (TaskStatus.IN_PROGRESS.equals(toStatus)) curreStatus.setCompletionDate(null);
-        status = toStatus;
-        if (TaskStatus.TODO.equals(toStatus)) curreStatus.setCompletionDate(null);
-        status = toStatus;
+        if (TaskStatus.IN_PROGRESS.equals(toStatus)) {
+          curreStatus.setCompletionDate(null);
+          status = toStatus;
+        }
+        if (TaskStatus.TODO.equals(toStatus)) {
+          curreStatus.setCompletionDate(null);
+          status = toStatus;
+        }
+
       default:
         break;
     }
@@ -146,11 +197,23 @@ public class TaskServiceImpl implements TaskService {
   }
 
   @Override
+  @Caching(
+      evict = {
+        @CacheEvict(
+            cacheNames = "tasksByProject",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(
+            cacheNames = "projectById",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(cacheNames = "userProjects", key = "@currentUserService.getCurrentUserId()")
+      })
   public void deleteTask(long projectId, long taskId) {
+    long userId = getCurrentUserId();
+    log.debug("Deleting taskId={} from projectId={} for userId={}", taskId, projectId, userId);
 
     var project =
         projectRepository
-            .findByIdAndUserId(projectId, getCurrentUserId())
+            .findByIdAndUserId(projectId, userId)
             .orElseThrow(() -> new UnauthorizedException("Invalid Project"));
 
     TaskEntity taskEntity =
@@ -162,5 +225,37 @@ public class TaskServiceImpl implements TaskService {
                         "Task not found for project %d".formatted(projectId)));
 
     taskRepository.delete(taskEntity);
+    log.info("Task deleted successfully with taskId={} from projectId={}", taskId, projectId);
+  }
+
+  @Override
+  @Caching(
+      evict = {
+        @CacheEvict(
+            cacheNames = "tasksByProject",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(
+            cacheNames = "projectById",
+            key = "@currentUserService.getCurrentUserId() + ':' + #projectId"),
+        @CacheEvict(cacheNames = "userProjects", key = "@currentUserService.getCurrentUserId()")
+      })
+  public TaskResponse assignUserTask(long taskId, long userId, long projectId) {
+
+    long projectOwnerId = getCurrentUserId();
+    log.debug("Assigning taskId={} in projectId={} to userId={}", taskId, projectId, userId);
+
+    TaskEntity task =
+        taskRepository
+            .findByIdAndProjectIdAndUserId(taskId, projectId, projectOwnerId)
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Project not found for projectId %d".formatted(projectId)));
+
+    task.setAssignedUserid(userId);
+
+    log.info("Task assignment updated for taskId={} with assignedUserId={}", taskId, userId);
+
+    return null;
   }
 }

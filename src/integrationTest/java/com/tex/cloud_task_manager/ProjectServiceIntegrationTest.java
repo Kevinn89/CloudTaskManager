@@ -13,6 +13,10 @@ import com.tex.cloud_task_manager.Project.ProjectStatus;
 import com.tex.cloud_task_manager.Project.response_request.ProjectResponse;
 import com.tex.cloud_task_manager.Project.service.ProjectService;
 import com.tex.cloud_task_manager.Security.CurrentUserService;
+import com.tex.cloud_task_manager.Task.TaskEntity;
+import com.tex.cloud_task_manager.Task.TaskPriority;
+import com.tex.cloud_task_manager.Task.TaskRepository;
+import com.tex.cloud_task_manager.Task.TaskStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +30,13 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
   @Autowired private ProjectRepository projectRepository;
 
+  @Autowired private TaskRepository taskRepository;
+
   @MockitoBean private CurrentUserService currentUserService;
 
   @BeforeEach
   void setUp() {
+    taskRepository.deleteAll();
     projectRepository.deleteAll();
   }
 
@@ -43,14 +50,14 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     assertNotNull(response.id());
     assertEquals("Integration Project", response.name());
     assertEquals("Integration Description", response.description());
-    assertEquals(ProjectStatus.ACTIVE, response.status());
+    assertEquals(ProjectStatus.NOT_ACTIVE, response.status());
 
     ProjectEntity savedProject = projectRepository.findById(response.id()).orElseThrow();
 
     assertEquals(10L, savedProject.getUserId());
     assertEquals("Integration Project", savedProject.getName());
     assertEquals("Integration Description", savedProject.getDescription());
-    assertEquals(ProjectStatus.ACTIVE, savedProject.getStatus());
+    assertEquals(ProjectStatus.NOT_ACTIVE, savedProject.getStatus());
     assertNotNull(savedProject.getCreatedAt());
   }
 
@@ -155,7 +162,8 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
     when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
     ProjectResponse response =
-        projectService.updateProject(savedProject.getId(), "New Name", "New Description");
+        projectService.updateProject(
+            savedProject.getId(), "New Name", "New Description", null, null);
 
     assertEquals("New Name", response.name());
     assertEquals("New Description", response.description());
@@ -186,7 +194,7 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
             RuntimeException.class,
             () ->
                 projectService.updateProject(
-                    otherUsersProject.getId(), "Hacked Name", "Hacked Description"));
+                    otherUsersProject.getId(), "Hacked Name", "Hacked Description", null, null));
 
     assertEquals(
         "Project not found with id: %d".formatted(otherUsersProject.getId()),
@@ -213,10 +221,40 @@ class ProjectServiceIntegrationTest extends AbstractIntegrationTest {
 
     when(currentUserService.getCurrentUserId()).thenReturn(10L);
 
-    ProjectResponse response = projectService.deleteProject(savedProject.getId());
+    projectService.deleteProject(savedProject.getId());
 
-    assertEquals(savedProject.getId(), response.id());
     assertFalse(projectRepository.findById(savedProject.getId()).isPresent());
+  }
+
+  @Test
+  void deleteProjectShouldDeleteProjectTasks() {
+    ProjectEntity savedProject =
+        projectRepository.save(
+            ProjectEntity.builder()
+                .userId(10L)
+                .name("Delete Project With Tasks")
+                .description("Current user owns this")
+                .createdAt(LocalDateTime.now())
+                .status(ProjectStatus.ACTIVE)
+                .build());
+
+    taskRepository.save(
+        TaskEntity.builder()
+            .project(savedProject)
+            .userId(10L)
+            .title("Task to delete")
+            .description("Deleted with project")
+            .createdAt(LocalDateTime.now())
+            .priority(TaskPriority.LOW)
+            .taskStatus(TaskStatus.TODO)
+            .build());
+
+    when(currentUserService.getCurrentUserId()).thenReturn(10L);
+
+    projectService.deleteProject(savedProject.getId());
+
+    assertFalse(projectRepository.findById(savedProject.getId()).isPresent());
+    assertTrue(taskRepository.findAll().isEmpty());
   }
 
   @Test

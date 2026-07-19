@@ -273,7 +273,7 @@ class TaskServiceImplTest {
   }
 
   @Test
-  void updateTaskShouldRejectUnchangedStatus() {
+  void updateTaskShouldSaveWhenStatusIsUnchanged() {
     when(currentUserService.getCurrentUserId()).thenReturn(userId);
     when(projectRepository.findByIdAndUserId(projectId, userId))
         .thenReturn(Optional.of(ownedProject));
@@ -291,14 +291,15 @@ class TaskServiceImplTest {
 
     when(taskRepository.findByIdAndProjectIdAndUserId(taskId, projectId, userId))
         .thenReturn(Optional.of(existingTask));
+    when(taskRepository.save(any(TaskEntity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-    RuntimeException exception =
-        assertThrows(
-            RuntimeException.class,
-            () -> taskService.updateTask(taskId, projectId, null, null, "TODO", null, null, null));
+    TaskResponse response =
+        taskService.updateTask(taskId, projectId, null, null, "TODO", null, null, null);
 
-    assertEquals("TaskStatus unchanged", exception.getMessage());
-    verify(taskRepository, never()).save(any());
+    assertEquals(TaskStatus.TODO, response.taskStatus());
+    assertEquals(TaskStatus.TODO, existingTask.getTaskStatus());
+    verify(taskRepository).save(existingTask);
   }
 
   @Test

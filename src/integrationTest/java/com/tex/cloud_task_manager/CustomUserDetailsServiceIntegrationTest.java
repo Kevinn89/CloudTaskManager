@@ -7,6 +7,7 @@ import com.tex.cloud_task_manager.Security.CustomUserDetailsService;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
 import com.tex.cloud_task_manager.User.service.UserService;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,10 @@ class CustomUserDetailsServiceIntegrationTest extends AbstractIntegrationTest {
   @Test
   void loadUserByUsernameShouldReturnUserDetailsWhenUserExists() {
     // Arrange
-    UserEntity savedUser = userService.createUser("Kevin", "kevin@test.com", "encoded-password");
+    UserEntity savedUser =
+        userService.createUser("Kevin", "kevin@test.com", "encoded-password", "USER");
+    savedUser.setVerifiedAt(Instant.now());
+    savedUser = userEntityRepository.save(savedUser);
 
     // Act
     UserDetails userDetails = customUserDetailsService.loadUserByUsername("kevin@test.com");

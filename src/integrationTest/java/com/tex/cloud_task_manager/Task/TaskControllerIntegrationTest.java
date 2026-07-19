@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.jayway.jsonpath.JsonPath;
 import com.tex.cloud_task_manager.AbstractWebIntegrationTest;
 import com.tex.cloud_task_manager.Project.ProjectEntity;
 import com.tex.cloud_task_manager.Project.ProjectRepository;
@@ -17,11 +16,15 @@ import com.tex.cloud_task_manager.Project.ProjectStatus;
 import com.tex.cloud_task_manager.RefreshToken.RefreshTokenRepository;
 import com.tex.cloud_task_manager.User.UserEntity;
 import com.tex.cloud_task_manager.User.UserEntityRepository;
+import jakarta.servlet.http.Cookie;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -51,8 +54,8 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     refreshTokenRepository.deleteAll();
     userEntityRepository.deleteAll();
 
-    registerUser("Kevin", "kevin@test.com", "Password123!");
-    registerUser("Other User", "other@test.com", "Password123!");
+    registerUser("Kevin", "kevin@test.com", "Password123!", "ADMIN");
+    registerUser("Other User", "other@test.com", "Password123!", "USER");
 
     owner = userEntityRepository.findByEmail("kevin@test.com").orElseThrow();
     otherUser = userEntityRepository.findByEmail("other@test.com").orElseThrow();
@@ -74,7 +77,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             post("/api/task/create")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new Cookie("access_token", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -113,7 +116,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             post("/api/task/create")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new Cookie("access_token", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -159,7 +162,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             get("/api/task/project/{projectId}", ownerProject.getId())
-                .header("Authorization", "Bearer " + token))
+                .cookie(new Cookie("access_token", token)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(1))
         .andExpect(jsonPath("$[0].id").value(expectedTask.getId()))
@@ -178,7 +181,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             get("/api/task/project/{projectId}", otherUserProject.getId())
-                .header("Authorization", "Bearer " + token))
+                .cookie(new Cookie("access_token", token)))
         .andExpect(status().isNotFound())
         .andExpect(
             jsonPath("$.message")
@@ -199,7 +202,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             put("/api/task/update")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new Cookie("access_token", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -242,7 +245,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             put("/api/task/update")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new Cookie("access_token", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -282,7 +285,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             put("/api/task/update")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new Cookie("access_token", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -322,7 +325,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             put("/api/task/update")
-                .header("Authorization", "Bearer " + token)
+                .cookie(new Cookie("access_token", token))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -361,7 +364,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
     mockMvc
         .perform(
             delete("/api/task/{taskId}/project/{projectId}", task.getId(), ownerProject.getId())
-                .header("Authorization", "Bearer " + token))
+                .cookie(new Cookie("access_token", token)))
         .andExpect(status().isNoContent())
         .andExpect(content().string(""));
 
@@ -387,7 +390,7 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                     "/api/task/{taskId}/project/{projectId}",
                     taskInSecondProject.getId(),
                     ownerProject.getId())
-                .header("Authorization", "Bearer " + token))
+                .cookie(new Cookie("access_token", token)))
         .andExpect(status().isNotFound())
         .andExpect(
             jsonPath("$.message")
@@ -411,14 +414,15 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                     "/api/task/{taskId}/project/{projectId}",
                     otherUserTask.getId(),
                     otherUserProject.getId())
-                .header("Authorization", "Bearer " + token))
+                .cookie(new Cookie("access_token", token)))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.message").value("Invalid Project"));
 
     assertThat(taskRepository.findById(otherUserTask.getId())).isPresent();
   }
 
-  private void registerUser(String name, String email, String password) throws Exception {
+  private void registerUser(String name, String email, String password, String accountType)
+      throws Exception {
     mockMvc
         .perform(
             post("/api/auth/register")
@@ -428,11 +432,16 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                                 {
                                   "name": "%s",
                                   "email": "%s",
-                                  "password": "%s"
+                                  "password": "%s",
+                                  "accountType": "%s"
                                 }
                                 """
-                        .formatted(name, email, password)))
+                        .formatted(name, email, password, accountType)))
         .andExpect(status().isOk());
+
+    var user = userEntityRepository.findByEmail(email).orElseThrow();
+    user.setVerifiedAt(Instant.now());
+    userEntityRepository.save(user);
   }
 
   private String loginAndExtractAccessToken(String email, String password) throws Exception {
@@ -450,10 +459,18 @@ class TaskControllerIntegrationTest extends AbstractWebIntegrationTest {
                                 """
                             .formatted(email, password)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.token").isNotEmpty())
             .andReturn();
 
-    return JsonPath.read(result.getResponse().getContentAsString(), "$.token");
+    return extractCookieValue(
+        result.getResponse().getHeaders(HttpHeaders.SET_COOKIE), "access_token");
+  }
+
+  private static String extractCookieValue(List<String> setCookieHeaders, String cookieName) {
+    return setCookieHeaders.stream()
+        .filter(header -> header.startsWith(cookieName + "="))
+        .map(header -> header.substring((cookieName + "=").length(), header.indexOf(';')))
+        .findFirst()
+        .orElseThrow();
   }
 
   private ProjectEntity createProject(String name, String description, Long userId) {
